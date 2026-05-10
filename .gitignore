@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment & secrets
+server/data/appConfig.json
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Vite cache
+.vite/
