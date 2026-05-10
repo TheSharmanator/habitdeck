@@ -53,7 +53,7 @@ Each side of the screen belongs to one person. Set your habits, set your KPIs, l
    npm start
    ```
 
-6. Open your browser and go to: **http://localhost:5173**
+6. Open your browser and go to: **http://localhost:3000**
 
 ---
 
@@ -95,11 +95,11 @@ Each side of the screen belongs to one person. Set your habits, set your KPIs, l
    npm run dev
    ```
 
-7. Open your browser and go to: **http://localhost:5173**
+7. Open your browser and go to: **http://localhost:3000**
 
    > **Pi kiosk tip:** To launch Chromium automatically in full-screen on boot, add this to your autostart file at `~/.config/lxsession/LXDE-pi/autostart`:
    > ```
-   > @chromium-browser --kiosk http://localhost:5173
+   > @chromium-browser --kiosk http://localhost:3000
    > ```
 
 ---
@@ -129,7 +129,7 @@ Each side of the screen belongs to one person. Set your habits, set your KPIs, l
    npm run dev
    ```
 
-6. Open your browser and go to: **http://localhost:5173**
+6. Open your browser and go to: **http://localhost:3000**
 
 ---
 
@@ -213,7 +213,7 @@ To configure manually, edit `server/data/appConfig.json`:
 |---------|-------------|
 | `npm start` | Starts both backend and frontend together (Windows) |
 | `npm run server` | Starts the backend server only — port 3001 |
-| `npm run dev` | Starts the Vite frontend dev server — port 5173 |
+| `npm run dev` | Starts the Vite frontend dev server — port 3000 |
 | `npm run build` | Builds the frontend for production |
 
 ---
