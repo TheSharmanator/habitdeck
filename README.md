@@ -39,7 +39,7 @@ Each side of the screen belongs to one person. Set your habits, set your KPIs, l
 
 3. Clone the repository:
    ```
-   git clone https://github.com/YOUR_USERNAME/habitdeck.git
+   git clone https://github.com/TheSharmanator/habitdeck.git
    cd habitdeck
    ```
 
@@ -76,7 +76,7 @@ Each side of the screen belongs to one person. Set your habits, set your KPIs, l
 
 3. Clone the repository:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/habitdeck.git
+   git clone https://github.com/TheSharmanator/habitdeck.git
    cd habitdeck
    ```
 
@@ -114,7 +114,7 @@ Each side of the screen belongs to one person. Set your habits, set your KPIs, l
 
 3. Clone the repository:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/habitdeck.git
+   git clone https://github.com/TheSharmanator/habitdeck.git
    cd habitdeck
    ```
 
