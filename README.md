@@ -21,7 +21,7 @@ Each side of the screen belongs to one person. Set your habits, set your KPIs, l
 
 ## Requirements
 
-- **Node.js** v18 or higher — [nodejs.org](https://nodejs.org)
+- **Node.js** v22 or higher — [nodejs.org](https://nodejs.org)
 - **npm** (comes bundled with Node.js)
 - A modern browser (Chrome or Chromium recommended for kiosk use)
 
@@ -34,22 +34,21 @@ Each side of the screen belongs to one person. Set your habits, set your KPIs, l
 ### 🪟 Windows
 
 1. Download and install Node.js from [nodejs.org](https://nodejs.org) — choose the **LTS** version.
-
 2. Open **Command Prompt** or **PowerShell**.
-
-3. Clone the repository:
-   ```
+3. Clone the repository and enter the folder:
+   ```cmd
    git clone https://github.com/TheSharmanator/habitdeck.git
    cd habitdeck
    ```
+   > **IMPORTANT:** Make sure your terminal line ends with `\habitdeck>` before doing step 4!
 
 4. Install dependencies:
-   ```
+   ```cmd
    npm install
    ```
 
-5. Start the app:
-   ```
+5. Start the app (this opens two windows for backend and frontend):
+   ```cmd
    npm start
    ```
 
@@ -57,66 +56,119 @@ Each side of the screen belongs to one person. Set your habits, set your KPIs, l
 
 ---
 
+**Creating a Windows Desktop Shortcut (Starts App + Full Kiosk):**
+If you want a one-click button on your desktop that starts the servers and opens the app in full-screen kiosk mode:
+
+1. Open **Notepad**.
+2. Paste this exactly (change the `cd /d` path if you downloaded it somewhere else):
+   ```bat
+   @echo off
+   cd /d "C:\Users\YOUR_USERNAME\habitdeck"
+   start /B npm run server
+   start /B npm run dev
+   timeout /t 5
+   start chrome --kiosk --noerrdialogs --disable-infobars http://localhost:3000
+   ```
+3. Go to **File > Save As...**
+4. Set "Save as type" to **All Files (\*.\*)**.
+5. Save it to your Desktop as `StartHabitDeck.bat`.
+6. Double-click this file anytime to boot everything at once.
+
+---
+
 ### 🐧 Linux (including Raspberry Pi OS)
 
 1. Open a terminal.
-
-2. Install Node.js (v18+):
+2. Install Node.js (v22+):
    ```bash
-   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+   curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
    sudo apt-get install -y nodejs
    ```
-   
    > On **Raspberry Pi OS (Bullseye/Bookworm)**, if the above fails, use:
    > ```bash
    > sudo apt update
    > sudo apt install nodejs npm -y
    > ```
-   > Then check the version: `node -v` — if it is below v18, use the nodesource method above.
+   > Then check the version: `node -v` — if it is below v22, use the curl method above.
 
-3. Clone the repository:
+3. Clone the repository and enter the folder:
    ```bash
    git clone https://github.com/TheSharmanator/habitdeck.git
    cd habitdeck
    ```
+   > **IMPORTANT:** Make sure your terminal line ends with `habitdeck$` before doing step 4!
 
 4. Install dependencies:
    ```bash
    npm install
    ```
 
-5. Start the backend server (in one terminal):
+---
+
+**Booting into Full Kiosk Mode (Servers + Browser):**
+If you try to launch the browser before the servers are running, it will fail. We need a script that starts everything in the correct order.
+
+First, check what your browser is called. Run this in the terminal:
+```bash
+which chromium-browser chromium
+```
+It will print out a path like `/usr/bin/chromium-browser` or `/usr/bin/chromium`. Write down the exact name it gives you.
+
+Now, let's create the boot script:
+
+1. Make sure you are in the habitdeck folder:
    ```bash
-   npm run server
+   cd ~/habitdeck
+   ```
+2. Create and edit the script:
+   ```bash
+   nano start-kiosk.sh
+   ```
+3. Paste the following (replace `{browsername}` with the name you found above, and use your IP address instead of `localhost` if needed, e.g. `http://192.168.1.50:3000`):
+   ```bash
+   #!/bin/bash
+   
+   # 1. Start the backend server
+   npm run server &
+   
+   # 2. Start the frontend server
+   npm run dev &
+   
+   # 3. Wait 5 seconds for them to boot
+   sleep 5
+   
+   # 4. Boot the browser into full kiosk mode
+   {browsername} --kiosk --noerrdialogs --disable-infobars http://localhost:3000
+   ```
+4. Save and exit (Press `Ctrl+O`, `Enter`, then `Ctrl+X`).
+5. Make the script executable:
+   ```bash
+   chmod +x start-kiosk.sh
+   ```
+6. Run it to start your kiosk:
+   ```bash
+   ./start-kiosk.sh
    ```
 
-6. Start the frontend (in a second terminal):
-   ```bash
-   npm run dev
-   ```
-
-7. Open your browser and go to: **http://localhost:3000**
-
-   > **Pi kiosk tip:** To launch Chromium automatically in full-screen on boot, add this to your autostart file at `~/.config/lxsession/LXDE-pi/autostart`:
-   > ```
-   > @chromium-browser --kiosk http://localhost:3000
-   > ```
+> **Pi Autostart Tip:** To run this script automatically every time the Pi turns on, add it to your autostart file at `~/.config/lxsession/LXDE-pi/autostart`:
+> ```
+> @/home/pi/habitdeck/start-kiosk.sh
+> ```
 
 ---
 
 ### 🍎 Mac
 
 1. Install Node.js from [nodejs.org](https://nodejs.org) — choose the **LTS** version.
-
    > Or with Homebrew: `brew install node`
 
 2. Open **Terminal**.
-
-3. Clone the repository:
+3. Clone the repository and enter the folder:
    ```bash
    git clone https://github.com/TheSharmanator/habitdeck.git
    cd habitdeck
    ```
+   > **IMPORTANT:** Make sure you are in the `habitdeck` folder before doing step 4!
 
 4. Install dependencies:
    ```bash
