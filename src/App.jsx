@@ -45,8 +45,18 @@ function UserPanel({ userId, username, onOpenSettings, unreadMessages, onOpenPos
   const habitDone = data?.habitLogs?.[yStr]?.locked;
   const kpiDone = data?.kpiLogs?.[yStr]?.locked;
 
-  const shouldNagHabits = data && !data.snooze_active && d.getHours() >= 6 && currentView === 'home' && !habitDone;
-  const shouldNagKPIs = data && !data.snooze_active && d.getHours() >= 6 && currentView === 'home' && !kpiDone;
+  const yIsBeforeSignup = data?.signupDate ? (yStr < data.signupDate) : false;
+  const yesterdayScheduleIndex = yDate.getDay() === 0 ? 6 : yDate.getDay() - 1;
+  const isRequired = (item) => {
+    if (!item.schedule || item.schedule.length !== 7) return true;
+    return item.schedule[yesterdayScheduleIndex];
+  };
+
+  const hasHabitsForYesterday = data?.habits?.length > 0 && data.habits.some(isRequired);
+  const hasKPIsForYesterday = data?.kpis?.length > 0 && data.kpis.some(isRequired);
+
+  const shouldNagHabits = data && !data.snooze_active && d.getHours() >= 6 && currentView === 'home' && !habitDone && hasHabitsForYesterday && !yIsBeforeSignup;
+  const shouldNagKPIs = data && !data.snooze_active && d.getHours() >= 6 && currentView === 'home' && !kpiDone && hasKPIsForYesterday && !yIsBeforeSignup;
 
   const renderView = () => {
     if (!data) return <p>Loading data...</p>;

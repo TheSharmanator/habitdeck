@@ -202,6 +202,11 @@ function PhotoUpload({ onPhotoSaved }) {
             onZoomChange={setZoom}
           />
         </div>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', padding: '15px', background: 'var(--panel-bg)', zIndex: 10 }}>
+          <button onClick={() => setZoom(z => Math.max(1, z - 0.2))} style={{ padding: '10px 20px', fontSize: '1.5rem', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid var(--border)', borderRadius: '8px' }}>➖</button>
+          <span style={{ color: 'white', fontSize: '1.2rem' }}>Zoom</span>
+          <button onClick={() => setZoom(z => Math.min(3, z + 0.2))} style={{ padding: '10px 20px', fontSize: '1.5rem', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid var(--border)', borderRadius: '8px' }}>➕</button>
+        </div>
         <div style={{ padding: '20px', background: 'var(--panel-bg)', display: 'flex', justifyContent: 'center', gap: '20px', zIndex: 10 }}>
           <button onClick={() => setImageSrc(null)} style={{ padding: '15px 30px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '1.2rem' }}>Cancel</button>
           <button onClick={showCroppedImage} style={{ padding: '15px 30px', background: 'var(--success)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1.2rem', fontWeight: 'bold' }}>Confirm Photo</button>
