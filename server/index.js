@@ -51,6 +51,16 @@ app.post('/api/data/:userId', (req, res) => {
   res.json({ success: true });
 });
 
+app.delete('/api/data/:userId', (req, res) => {
+  const filePath = getDataPath(req.params.userId);
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'User data not found' });
+  }
+});
+
 // --- Config endpoints ---
 app.get('/api/config', (req, res) => {
   res.json(getConfig());
