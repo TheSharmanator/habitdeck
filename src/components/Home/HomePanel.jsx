@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 
 export default function HomePanel({ data }) {
   const [selectedMetric, setSelectedMetric] = useState(null);
+  const [viewMode, setViewMode] = useState('habits'); // Default to habits
 
   if (!data) return <p>Loading...</p>;
 
-  // Helper to get yesterday's date
+  // ... (keeping helper functions same)
   const getYesterday = () => {
     const d = new Date();
     d.setDate(d.getDate() - 1);
@@ -182,49 +183,69 @@ export default function HomePanel({ data }) {
   const metricStats = selectedMetric ? getMetricStats(selectedMetric) : null;
 
   return (
-    <div className="home-panel" style={{ display: 'flex', flexDirection: 'column', gap: '20px', height: '100%', overflowY: 'auto', position: 'relative' }}>
+    <div className="home-panel" style={{ display: 'flex', flexDirection: 'column', gap: '20px', height: '100%', overflowY: 'auto', position: 'relative', fontSize: '1.2rem' }}>
       
+      {/* View Toggle */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+        <button 
+          onClick={() => setViewMode('habits')} 
+          style={{ flex: 1, padding: '15px', borderRadius: '12px', border: 'none', background: viewMode === 'habits' ? 'var(--success)' : 'rgba(255,255,255,0.1)', color: 'white', fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer' }}
+        >
+          Habits
+        </button>
+        <button 
+          onClick={() => setViewMode('kpis')} 
+          style={{ flex: 1, padding: '15px', borderRadius: '12px', border: 'none', background: viewMode === 'kpis' ? 'var(--accent)' : 'rgba(255,255,255,0.1)', color: 'white', fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer' }}
+        >
+          KPIs
+        </button>
+      </div>
+
       {/* Top-Line Results */}
       <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
         <div className="stat-card" style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '12px' }}>
-          <h4>Habits % (All Time)</h4>
-          <div style={{ fontSize: '2rem', color: 'var(--success)' }}>{habitStats.percent}%</div>
+          <h4 style={{ fontSize: '1.1rem' }}>Habits % (All Time)</h4>
+          <div style={{ fontSize: '2.4rem', color: 'var(--success)' }}>{habitStats.percent}%</div>
         </div>
         <div className="stat-card" style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '12px' }}>
-          <h4>KPI % (All Time)</h4>
-          <div style={{ fontSize: '2rem', color: 'var(--accent)' }}>{kpiStats.percent}%</div>
+          <h4 style={{ fontSize: '1.1rem' }}>KPI % (All Time)</h4>
+          <div style={{ fontSize: '2.4rem', color: 'var(--accent)' }}>{kpiStats.percent}%</div>
         </div>
         <div className="stat-card" style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '12px' }}>
-          <h4>Habit Streak</h4>
-          <div style={{ fontSize: '1.2rem', marginTop: '5px' }}>🔥 Current: <strong style={{color: 'var(--success)'}}>{habitStats.streak}</strong> | Best: <strong>{habitStats.bestStreak}</strong></div>
+          <h4 style={{ fontSize: '1.1rem' }}>Habit Streak</h4>
+          <div style={{ fontSize: '1.4rem', marginTop: '5px' }}>🔥 Current: <strong style={{color: 'var(--success)'}}>{habitStats.streak}</strong> | Best: <strong>{habitStats.bestStreak}</strong></div>
         </div>
         <div className="stat-card" style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '12px' }}>
-          <h4>KPI Streak</h4>
-          <div style={{ fontSize: '1.2rem', marginTop: '5px' }}>🚀 Current: <strong style={{color: 'var(--accent)'}}>{kpiStats.streak}</strong> | Best: <strong>{kpiStats.bestStreak}</strong></div>
+          <h4 style={{ fontSize: '1.1rem' }}>KPI Streak</h4>
+          <div style={{ fontSize: '1.4rem', marginTop: '5px' }}>🚀 Current: <strong style={{color: 'var(--accent)'}}>{kpiStats.streak}</strong> | Best: <strong>{kpiStats.bestStreak}</strong></div>
         </div>
       </div>
 
       {/* Habits List */}
-      <div className="list-section">
-        <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '10px', marginBottom: '10px' }}>Daily Habits</h3>
-        {data.habits.map(h => (
-          <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: 'rgba(0,0,0,0.2)', marginBottom: '5px', borderRadius: '8px' }}>
-            <span>{h.label}</span>
-            <button onClick={() => setSelectedMetric({ type: 'Habit', ...h })} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', filter: 'grayscale(0%)' }}>👁️</button>
-          </div>
-        ))}
-      </div>
+      {viewMode === 'habits' && (
+        <div className="list-section">
+          <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '10px', marginBottom: '10px', fontSize: '1.5rem' }}>Daily Habits</h3>
+          {data.habits.map(h => (
+            <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', background: 'rgba(0,0,0,0.2)', marginBottom: '8px', borderRadius: '8px' }}>
+              <span style={{ fontSize: '1.2rem' }}>{h.label}</span>
+              <button onClick={() => setSelectedMetric({ type: 'Habit', ...h })} style={{ background: 'var(--success)', border: 'none', color: 'white', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '1rem', fontWeight: 'bold' }}>View</button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* KPIs List */}
-      <div className="list-section">
-        <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '10px', marginBottom: '10px' }}>Daily KPIs</h3>
-        {data.kpis.map(k => (
-          <div key={k.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: 'rgba(0,0,0,0.2)', marginBottom: '5px', borderRadius: '8px' }}>
-            <span>{k.label} (Min: {k.min}, Max: {k.max})</span>
-            <button onClick={() => setSelectedMetric({ type: 'KPI', ...k })} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', filter: 'grayscale(0%)' }}>👁️</button>
-          </div>
-        ))}
-      </div>
+      {viewMode === 'kpis' && (
+        <div className="list-section">
+          <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '10px', marginBottom: '10px', fontSize: '1.5rem' }}>Daily KPIs</h3>
+          {data.kpis.map(k => (
+            <div key={k.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', background: 'rgba(0,0,0,0.2)', marginBottom: '8px', borderRadius: '8px' }}>
+              <span style={{ fontSize: '1.2rem' }}>{k.label} (Min: {k.min}, Max: {k.max})</span>
+              <button onClick={() => setSelectedMetric({ type: 'KPI', ...k })} style={{ background: 'var(--success)', border: 'none', color: 'white', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '1rem', fontWeight: 'bold' }}>View</button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Stats Popup Modal */}
       {selectedMetric && metricStats && (

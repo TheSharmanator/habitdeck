@@ -87,15 +87,24 @@ function UserPanel({ userId, username, onOpenSettings, unreadMessages, onOpenPos
     <div className="user-panel" style={{ position: 'relative' }}>
       <div className="glass-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', filter: (shouldNagHabits || shouldNagKPIs) ? 'blur(8px)' : 'none', pointerEvents: (shouldNagHabits || shouldNagKPIs) ? 'none' : 'auto' }}>
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => setCurrentView('home')}>
-            {data && data.photo ? (
-              <img src={data.photo} alt="Profile" style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }} />
-            ) : (
-              <div style={{ width: '60px', height: '60px', borderRadius: '50%', backgroundColor: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold' }}>
-                {data && data.username ? data.username[0] : username[0]}
-              </div>
-            )}
-            <h2>{data && data.username ? data.username : username}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div 
+              style={{ cursor: 'pointer', transition: 'transform 0.2s' }} 
+              onClick={() => {
+                if (window.confirm("Would you like to update your profile photo or settings?")) {
+                  onOpenSettings();
+                }
+              }}
+            >
+              {data && data.photo ? (
+                <img src={data.photo} alt="Profile" style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent)' }} />
+              ) : (
+                <div style={{ width: '60px', height: '60px', borderRadius: '50%', backgroundColor: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold' }}>
+                  {data && data.username ? data.username[0] : username[0]}
+                </div>
+              )}
+            </div>
+            <h2 style={{ cursor: 'pointer' }} onClick={() => setCurrentView('home')}>{data && data.username ? data.username : username}</h2>
           </div>
           <div className="icons" style={{ display: 'flex', gap: '20px' }}>
             <button onClick={() => onOpenMessages()} style={{ background: 'none', border: 'none', fontSize: '32px', cursor: 'pointer', position: 'relative' }} title="Messages">

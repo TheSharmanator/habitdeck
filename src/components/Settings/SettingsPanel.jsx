@@ -349,6 +349,16 @@ export default function SettingsPanel({ userId, onClose }) {
     setFormData({ ...formData, kpis: newK, kpiLogs: newKpiLogs });
   };
 
+  const nukeAccount = async () => {
+    if (window.confirm("WARNING: This will PERMANENTLY DELETE your account and all data. This cannot be undone. Are you absolutely sure?")) {
+      const secondCheck = window.confirm("Final check: ALL habits, KPIs and history for this user will be gone. Confirm nuke?");
+      if (secondCheck) {
+        await fetch(`/api/data/${userId}`, { method: 'DELETE' });
+        window.location.reload(); 
+      }
+    }
+  };
+
   return (
     <div className="settings-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', padding: '15px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
@@ -363,6 +373,7 @@ export default function SettingsPanel({ userId, onClose }) {
           <h2 style={{ margin: 0 }}>{formData.username}'s Dashboard</h2>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
+          <button onClick={nukeAccount} style={{ padding: '10px 20px', background: 'var(--danger)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: 'bold' }}>Delete Account</button>
           <button onClick={() => onClose()} style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '1rem' }}>Cancel</button>
           <button onClick={() => handleSave(false)} style={{ padding: '10px 20px', background: 'var(--success)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: 'bold' }}>Save & Exit</button>
         </div>
