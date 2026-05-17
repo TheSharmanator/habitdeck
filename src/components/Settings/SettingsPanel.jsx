@@ -239,6 +239,7 @@ export default function SettingsPanel({ userId, onClose }) {
   const [onboardingStep, setOnboardingStep] = useState(0); // 0 = not onboarding, 1 = name, 2 = photo
   const [formData, setFormData] = useState({ username: '', pin: '', photo: '', habits: [], kpis: [] });
   const [activeInput, setActiveInput] = useState(null);
+  const [nukeConfirmStep, setNukeConfirmStep] = useState(0); // 0=idle, 1=first confirm, 2=second confirm
 
   useEffect(() => {
     fetch(`/api/data/${userId}`)
@@ -278,6 +279,7 @@ export default function SettingsPanel({ userId, onClose }) {
 
   // Onboarding Wizard
   if (onboardingStep === 1) {
+    const nameValid = formData.username.trim().length > 0;
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '20px' }}>
         <h2>Enter Your Name</h2>
@@ -286,9 +288,14 @@ export default function SettingsPanel({ userId, onClose }) {
           value={formData.username} 
           readOnly 
           onClick={() => setActiveInput({ type: 'username', value: formData.username })}
-          style={{ width: '300px', padding: '15px', fontSize: '1.5rem', textAlign: 'center', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', color: 'white', borderRadius: '8px', margin: '20px 0' }} 
+          style={{ width: '300px', padding: '15px', fontSize: '1.5rem', textAlign: 'center', background: 'rgba(0,0,0,0.3)', border: `1px solid ${nameValid ? 'var(--border)' : '#ef4444'}`, color: 'white', borderRadius: '8px', margin: '20px 0' }} 
         />
-        <button onClick={() => setOnboardingStep(2)} style={{ padding: '15px 40px', fontSize: '1.2rem', background: 'var(--success)', border: 'none', color: 'white', borderRadius: '8px' }}>Next</button>
+        {!nameValid && <p style={{ color: '#ef4444', marginBottom: '10px', fontSize: '1rem' }}>A name is required to continue.</p>}
+        <button
+          onClick={() => { if (nameValid) setOnboardingStep(2); }}
+          disabled={!nameValid}
+          style={{ padding: '15px 40px', fontSize: '1.2rem', background: nameValid ? 'var(--success)' : 'rgba(255,255,255,0.1)', border: 'none', color: 'white', borderRadius: '8px', cursor: nameValid ? 'pointer' : 'not-allowed', opacity: nameValid ? 1 : 0.5 }}
+        >Next</button>
         {activeInput && (
           <VirtualKeyboard 
             value={activeInput.value} 
@@ -350,13 +357,12 @@ export default function SettingsPanel({ userId, onClose }) {
   };
 
   const nukeAccount = async () => {
-    if (window.confirm("WARNING: This will PERMANENTLY DELETE your account and all data. This cannot be undone. Are you absolutely sure?")) {
-      const secondCheck = window.confirm("Final check: ALL habits, KPIs and history for this user will be gone. Confirm nuke?");
-      if (secondCheck) {
-        await fetch(`/api/data/${userId}`, { method: 'DELETE' });
-        window.location.reload(); 
-      }
-    }
+    setNukeConfirmStep(1);
+  };
+
+  const confirmNuke = async () => {
+    await fetch(`/api/data/${userId}`, { method: 'DELETE' });
+    window.location.reload();
   };
 
   return (
@@ -461,6 +467,45 @@ export default function SettingsPanel({ userId, onClose }) {
           }} 
           onClose={() => setActiveInput(null)} 
         />
+      )}
+
+      {/* In-app nuke confirmation — no system dialogs */}
+      {nukeConfirmStep > 0 && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 300,
+          background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div style={{
+            background: 'var(--panel-bg)', border: '2px solid #ef4444',
+            borderRadius: '16px', padding: '30px 40px', textAlign: 'center',
+            boxShadow: '0 20px 60px rgba(239,68,68,0.4)', maxWidth: '360px', width: '90%'
+          }}>
+            {nukeConfirmStep === 1 ? (
+              <>
+                <p style={{ color: '#ef4444', fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '10px' }}>⚠️ Delete Account</p>
+                <p style={{ color: 'var(--text-primary)', marginBottom: '24px', lineHeight: 1.5 }}>
+                  This will permanently delete ALL habits, KPIs and history. This cannot be undone.
+                </p>
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                  <button onClick={() => setNukeConfirmStep(0)} style={{ padding: '12px 24px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '1rem', cursor: 'pointer' }}>Cancel</button>
+                  <button onClick={() => setNukeConfirmStep(2)} style={{ padding: '12px 24px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer' }}>Yes, Delete</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p style={{ color: '#ef4444', fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '10px' }}>Final Confirmation</p>
+                <p style={{ color: 'var(--text-primary)', marginBottom: '24px', lineHeight: 1.5 }}>
+                  Last chance. Once deleted, all data is gone forever.
+                </p>
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                  <button onClick={() => setNukeConfirmStep(0)} style={{ padding: '12px 24px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '1rem', cursor: 'pointer' }}>Cancel</button>
+                  <button onClick={confirmNuke} style={{ padding: '12px 24px', background: '#7f1d1d', color: 'white', border: 'none', borderRadius: '8px', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer' }}>NUKE IT</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

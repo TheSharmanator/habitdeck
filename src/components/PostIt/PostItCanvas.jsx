@@ -2,7 +2,27 @@ import React, { useRef, useState, useEffect } from 'react';
 
 const COLORS = ['#000000', '#ffffff', '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7'];
 const BRUSH_SIZES = [2, 6, 12];
-const EMOJIS = ['💋','👍','❤️','😉','🤔','🤷','🤦','😂','😭','😡','😛','🤪','🥱','👊','💪','🤤'];
+// Map to PNG files in /public/emojis/ — avoids relying on system emoji fonts (broken on Pi/Linux)
+const EMOJIS = [
+  { key: 'kiss',      src: '/emojis/kiss.png' },
+  { key: 'thumbsup',  src: '/emojis/thumbsup.png' },
+  { key: 'heart',     src: '/emojis/heart.png' },
+  { key: 'wink',      src: '/emojis/wink.png' },
+  { key: 'thinking',  src: '/emojis/thinking.png' },
+  { key: 'shrug',     src: '/emojis/shrug.png' },
+  { key: 'faceplant', src: '/emojis/faceplant.png' },
+  { key: 'laughing',  src: '/emojis/laughing.png' },
+  { key: 'crying',    src: '/emojis/crying.png' },
+  { key: 'angry',     src: '/emojis/angry.png' },
+  { key: 'tongueout', src: '/emojis/tongueout.png' },
+  { key: 'crazy',     src: '/emojis/crazy.png' },
+  { key: 'yawn',      src: '/emojis/yawn.png' },
+  { key: 'punch',     src: '/emojis/punch.png' },
+  { key: 'flexedarm', src: '/emojis/flexedarm.png' },
+  { key: 'drool',     src: '/emojis/drool.png' },
+  { key: 'shocked',   src: '/emojis/shocked.png' },
+  { key: 'confused',  src: '/emojis/confused.png' },
+];
 
 export default function PostItCanvas({ onClose, onSend }) {
   const canvasRef = useRef(null);
@@ -79,29 +99,34 @@ export default function PostItCanvas({ onClose, onSend }) {
     e.preventDefault();
     const { offsetX, offsetY } = getCoordinates(e);
     
-    const newEmoji = e.dataTransfer.getData('new_emoji');
+    const newEmojiRaw = e.dataTransfer.getData('new_emoji');
     const moveEmojiId = e.dataTransfer.getData('move_emoji');
     
-    if (newEmoji) {
-      setPlacedEmojis(prev => [...prev, { id: Date.now().toString(), emoji: newEmoji, x: offsetX, y: offsetY }]);
+    if (newEmojiRaw) {
+      try {
+        const emojiObj = JSON.parse(newEmojiRaw);
+        setPlacedEmojis(prev => [...prev, { id: Date.now().toString(), key: emojiObj.key, src: emojiObj.src, x: offsetX, y: offsetY }]);
+      } catch {}
     } else if (moveEmojiId) {
       setPlacedEmojis(prev => prev.map(em => em.id === moveEmojiId ? { ...em, x: offsetX, y: offsetY } : em));
     }
   };
 
-  const sendPostIt = () => {
+  const sendPostIt = async () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    // Draw each placed emoji PNG onto the canvas before capturing
+    await Promise.all(placedEmojis.map(em => new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, em.x - 24, em.y - 24, 48, 48);
+        resolve();
+      };
+      img.onerror = resolve; // skip broken images gracefully
+      img.src = em.src;
+    })));
     if (onSend) {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      ctx.save();
-      ctx.font = '40px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      placedEmojis.forEach(em => {
-        ctx.fillText(em.emoji, em.x, em.y);
-      });
       const dataUrl = canvas.toDataURL('image/png');
-      ctx.restore();
       onSend(dataUrl);
     }
     clearCanvas(true);
@@ -132,10 +157,17 @@ export default function PostItCanvas({ onClose, onSend }) {
       <div style={{ display: 'flex', gap: '10px', flex: 1, overflow: 'hidden' }}>
         <div style={{ width: '60px', display: 'flex', flexDirection: 'column', gap: '5px', overflowY: 'auto' }}>
           {EMOJIS.map(e => (
-            <div key={e} draggable onDragStart={(ev) => ev.dataTransfer.setData('new_emoji', e)} style={{ fontSize: '24px', textAlign: 'center', cursor: 'grab', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '5px' }}>{e}</div>
+            <div
+              key={e.key}
+              draggable
+              onDragStart={(ev) => ev.dataTransfer.setData('new_emoji', JSON.stringify(e))}
+              style={{ textAlign: 'center', cursor: 'grab', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '3px' }}
+            >
+              <img src={e.src} alt={e.key} style={{ width: '44px', height: '44px', objectFit: 'contain', display: 'block', margin: '0 auto' }} />
+            </div>
           ))}
           <div 
-            style={{ marginTop: 'auto', background: 'rgba(239, 68, 68, 0.2)', padding: '10px 0', borderRadius: '8px', textAlign: 'center', border: '2px dashed #ef4444' }}
+            style={{ marginTop: 'auto', background: 'rgba(239, 68, 68, 0.2)', padding: '10px 0', borderRadius: '8px', textAlign: 'center', border: '2px dashed #ef4444', fontSize: '20px' }}
             onDragOver={e => e.preventDefault()}
             onDrop={e => {
               e.preventDefault();
@@ -170,9 +202,9 @@ export default function PostItCanvas({ onClose, onSend }) {
               onDragStart={(e) => {
                 e.dataTransfer.setData('move_emoji', em.id);
               }}
-              style={{ position: 'absolute', left: em.x, top: em.y, fontSize: '40px', transform: 'translate(-50%, -50%)', cursor: 'grab', touchAction: 'none' }}
+              style={{ position: 'absolute', left: em.x, top: em.y, width: '48px', height: '48px', transform: 'translate(-50%, -50%)', cursor: 'grab', touchAction: 'none' }}
             >
-              {em.emoji}
+              <img src={em.src} alt={em.key} style={{ width: '48px', height: '48px', objectFit: 'contain', pointerEvents: 'none' }} />
             </div>
           ))}
         </div>

@@ -7,9 +7,10 @@ import PostItViewer from './components/PostIt/PostItViewer';
 import SettingsPanel from './components/Settings/SettingsPanel';
 import BackupSetup from './components/BackupSetup';
 
-function UserPanel({ userId, username, onOpenSettings, unreadMessages, onOpenPostIt, onOpenMessages }) {
+function UserPanel({ userId, username, onOpenSettings, unreadMessages, onOpenPostIt, onOpenMessages, settingsJustClosed }) {
   const [data, setData] = useState(null);
   const [currentView, setCurrentView] = useState('home');
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
 
   const fetchData = () => {
     fetch(`/api/data/${userId}?t=${Date.now()}`)
@@ -21,6 +22,11 @@ function UserPanel({ userId, username, onOpenSettings, unreadMessages, onOpenPos
   useEffect(() => {
     fetchData();
   }, [userId]);
+
+  // Re-fetch whenever settings panel closes so we pick up PIN / name / photo
+  useEffect(() => {
+    if (settingsJustClosed) fetchData();
+  }, [settingsJustClosed]);
 
   const saveData = async (newData) => {
     setData(newData);
@@ -90,11 +96,7 @@ function UserPanel({ userId, username, onOpenSettings, unreadMessages, onOpenPos
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div 
               style={{ cursor: 'pointer', transition: 'transform 0.2s' }} 
-              onClick={() => {
-                if (window.confirm("Would you like to update your profile photo or settings?")) {
-                  onOpenSettings();
-                }
-              }}
+              onClick={() => setShowPhotoModal(true)}
             >
               {data && data.photo ? (
                 <img src={data.photo} alt="Profile" style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent)' }} />
@@ -142,6 +144,38 @@ function UserPanel({ userId, username, onOpenSettings, unreadMessages, onOpenPos
           </div>
         </div>
       )}
+      {/* In-app photo/settings modal — no system dialogs */}
+      {showPhotoModal && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 200,
+          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div style={{
+            background: 'var(--panel-bg)', border: '1px solid var(--border)',
+            borderRadius: '16px', padding: '30px 40px', textAlign: 'center',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.6)', maxWidth: '320px', width: '90%'
+          }}>
+            <p style={{ color: 'var(--text-primary)', fontSize: '1.2rem', marginBottom: '24px', lineHeight: 1.5 }}>
+              What would you like to do?
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <button
+                onClick={() => { setShowPhotoModal(false); onOpenSettings(); }}
+                style={{ padding: '14px 20px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '1.1rem', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                ⚙️ Open Settings
+              </button>
+              <button
+                onClick={() => setShowPhotoModal(false)}
+                style={{ padding: '14px 20px', background: 'rgba(255,255,255,0.08)', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '1rem', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -154,6 +188,13 @@ function App() {
   const [messages, setMessages] = useState({ u1: [], u2: [] });
   const [showBackupSetup, setShowBackupSetup] = useState(false);
   const [configChecked, setConfigChecked] = useState(false);
+  // Incremented each time settings closes — UserPanel watches this to re-fetch
+  const [settingsCloseCount, setSettingsCloseCount] = useState({ u1: 0, u2: 0 });
+
+  const closeSettings = (userId) => {
+    setActiveFullScreenSettings(null);
+    setSettingsCloseCount(prev => ({ ...prev, [userId]: prev[userId] + 1 }));
+  };
 
   useEffect(() => {
     fetch('/api/config')
@@ -184,7 +225,7 @@ function App() {
       <div style={{ width: '100vw', height: '100vh', background: 'var(--bg-color)' }}>
         <SettingsPanel 
           userId={activeFullScreenSettings} 
-          onClose={() => setActiveFullScreenSettings(null)} 
+          onClose={() => closeSettings(activeFullScreenSettings)} 
         />
       </div>
     );
@@ -242,6 +283,7 @@ function App() {
           onOpenSettings={() => setActiveFullScreenSettings('u1')} 
           unreadMessages={messages.u1.length}
           onOpenPostIt={() => setFullScreenPostIt('u1')}
+          settingsJustClosed={settingsCloseCount.u1}
           onOpenMessages={() => {
             if (messages.u1.length > 0) setViewingMessages('u1');
           }}
@@ -252,6 +294,7 @@ function App() {
           onOpenSettings={() => setActiveFullScreenSettings('u2')} 
           unreadMessages={messages.u2.length}
           onOpenPostIt={() => setFullScreenPostIt('u2')}
+          settingsJustClosed={settingsCloseCount.u2}
           onOpenMessages={() => {
             if (messages.u2.length > 0) setViewingMessages('u2');
           }}
