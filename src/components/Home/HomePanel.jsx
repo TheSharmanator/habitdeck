@@ -213,11 +213,11 @@ export default function HomePanel({ data }) {
         </div>
         <div className="stat-card" style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '12px' }}>
           <h4 style={{ fontSize: '1.1rem' }}>Habit Streak</h4>
-          <div style={{ fontSize: '1.4rem', marginTop: '5px' }}>🔥 Current: <strong style={{color: 'var(--success)'}}>{habitStats.streak}</strong> | Best: <strong>{habitStats.bestStreak}</strong></div>
+          <div style={{ fontSize: '1.4rem', marginTop: '5px', display: 'flex', alignItems: 'center', gap: '5px' }}><img src="/icons/flame.png" alt="Flame" style={{ width: '24px', height: '24px' }}/> Current: <strong style={{color: 'var(--success)'}}>{habitStats.streak}</strong> | Best: <strong>{habitStats.bestStreak}</strong></div>
         </div>
         <div className="stat-card" style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '12px' }}>
           <h4 style={{ fontSize: '1.1rem' }}>KPI Streak</h4>
-          <div style={{ fontSize: '1.4rem', marginTop: '5px' }}>🚀 Current: <strong style={{color: 'var(--accent)'}}>{kpiStats.streak}</strong> | Best: <strong>{kpiStats.bestStreak}</strong></div>
+          <div style={{ fontSize: '1.4rem', marginTop: '5px', display: 'flex', alignItems: 'center', gap: '5px' }}><img src="/icons/rocket.png" alt="Rocket" style={{ width: '24px', height: '24px' }}/> Current: <strong style={{color: 'var(--accent)'}}>{kpiStats.streak}</strong> | Best: <strong>{kpiStats.bestStreak}</strong></div>
         </div>
       </div>
 
