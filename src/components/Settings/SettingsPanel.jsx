@@ -429,7 +429,7 @@ export default function SettingsPanel({ userId, onClose }) {
                     onClick={() => setActiveInput({ type: 'kpi', idx: i, value: k.label })}
                     style={{ flex: 1, padding: '10px', fontSize: '1.2rem', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', color: 'white', borderRadius: '6px' }} 
                   />
-                  <button onClick={() => removeKpi(i)} style={{ padding: '0 15px', background: 'var(--danger)', color: 'white', border: 'none', borderRadius: '6px', fontSize: '1.3rem', cursor: 'pointer' }}>🗑</button>
+                  <button onClick={() => removeKpi(i)} style={{ padding: '0 10px', background: 'var(--danger)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><img src="/icons/delete.png" alt="Delete" style={{ width: '24px', height: '24px' }} /></button>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}><label style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>Min</label><input type="text" readOnly onClick={() => setActiveInput({ type: 'kpi-num', field: 'min', idx: i, value: String(k.min) })} value={k.min} style={{ width: '100%', padding: '10px', fontSize: '1.2rem', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', color: 'white', borderRadius: '6px' }} /></div>
@@ -455,7 +455,7 @@ export default function SettingsPanel({ userId, onClose }) {
                     onClick={() => setActiveInput({ type: 'habit', idx: i, value: h.label })}
                     style={{ flex: 1, padding: '10px', fontSize: '1.2rem', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', color: 'white', borderRadius: '6px' }} 
                   />
-                  <button onClick={() => removeHabit(i)} style={{ padding: '0 15px', background: 'var(--danger)', color: 'white', border: 'none', borderRadius: '6px', fontSize: '1.3rem', cursor: 'pointer' }}>🗑</button>
+                  <button onClick={() => removeHabit(i)} style={{ padding: '0 10px', background: 'var(--danger)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><img src="/icons/delete.png" alt="Delete" style={{ width: '24px', height: '24px' }} /></button>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   {['M','T','W','T','F','S','S'].map((day, dIdx) => (

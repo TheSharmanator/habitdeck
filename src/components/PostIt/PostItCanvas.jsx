@@ -134,40 +134,39 @@ export default function PostItCanvas({ onClose, onSend }) {
   };
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-      <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }}>
-        <div style={{ display: 'flex', gap: '5px' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      {/* Top toolbar: colours + brushes + eraser + emojis + clear/cancel/send */}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', paddingBottom: '6px', borderBottom: '1px solid var(--border)' }}>
+        {/* Ink colours */}
+        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
           {COLORS.map(c => (
-            <button key={`ink-${c}`} onClick={() => {setColor(c); setEraserMode(false);}} style={{ width: '30px', height: '30px', background: c, border: color === c && !eraserMode ? '3px solid white' : '1px solid gray', borderRadius: '50%' }} />
+            <button key={`ink-${c}`} onClick={() => {setColor(c); setEraserMode(false);}} style={{ width: '26px', height: '26px', background: c, border: color === c && !eraserMode ? '3px solid white' : '1px solid gray', borderRadius: '50%' }} />
           ))}
         </div>
-        <div style={{ borderLeft: '1px solid var(--border)', paddingLeft: '10px', display: 'flex', gap: '5px' }}>
+        {/* Brush sizes */}
+        <div style={{ display: 'flex', gap: '4px' }}>
           {BRUSH_SIZES.map(s => (
-            <button key={`size-${s}`} onClick={() => setBrushSize(s)} style={{ width: '30px', height: '30px', borderRadius: '50%', background: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', border: brushSize === s ? '3px solid var(--accent)' : '1px solid gray' }}>
+            <button key={`size-${s}`} onClick={() => setBrushSize(s)} style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', border: brushSize === s ? '3px solid var(--accent)' : '1px solid gray' }}>
               <div style={{ width: s, height: s, background: 'black', borderRadius: '50%' }}></div>
             </button>
           ))}
-          <button onClick={() => setEraserMode(true)} style={{ padding: '10px 20px', fontSize: '1.1rem', background: eraserMode ? 'var(--accent)' : 'var(--panel-bg)', color: 'white', border: '1px solid var(--border)', borderRadius: '8px', cursor: 'pointer' }}>Eraser</button>
+          <button onClick={() => setEraserMode(true)} style={{ padding: '4px 10px', fontSize: '0.85rem', background: eraserMode ? 'var(--accent)' : 'var(--panel-bg)', color: 'white', border: '1px solid var(--border)', borderRadius: '6px', cursor: 'pointer' }}>Eraser</button>
         </div>
-        <button onClick={() => { clearCanvas(); setPlacedEmojis([]); }} style={{ marginLeft: 'auto', padding: '10px 20px', fontSize: '1.1rem', background: 'var(--danger)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Clear</button>
-        {onClose && <button onClick={onClose} style={{ padding: '10px 20px', fontSize: '1.1rem', background: 'var(--panel-bg)', color: 'white', border: '1px solid var(--border)', borderRadius: '8px', cursor: 'pointer' }}>Cancel</button>}
-        <button onClick={sendPostIt} style={{ padding: '10px 25px', fontSize: '1.2rem', background: 'var(--success)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>SEND</button>
-      </div>
-
-      <div style={{ display: 'flex', gap: '10px', flex: 1, overflow: 'hidden' }}>
-        <div style={{ width: '60px', display: 'flex', flexDirection: 'column', gap: '5px', overflowY: 'auto' }}>
+        {/* Emoji strip — drag onto canvas */}
+        <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', flex: 1 }}>
           {EMOJIS.map(e => (
             <div
               key={e.key}
               draggable
               onDragStart={(ev) => ev.dataTransfer.setData('new_emoji', JSON.stringify(e))}
-              style={{ textAlign: 'center', cursor: 'grab', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '3px' }}
+              style={{ flexShrink: 0, cursor: 'grab', background: 'rgba(255,255,255,0.1)', borderRadius: '6px', padding: '2px' }}
             >
-              <img src={e.src} alt={e.key} style={{ width: '44px', height: '44px', objectFit: 'contain', display: 'block', margin: '0 auto' }} />
+              <img src={e.src} alt={e.key} style={{ width: '36px', height: '36px', objectFit: 'contain', display: 'block' }} />
             </div>
           ))}
-          <div 
-            style={{ marginTop: 'auto', background: 'rgba(239, 68, 68, 0.2)', padding: '10px 0', borderRadius: '8px', textAlign: 'center', border: '2px dashed #ef4444', fontSize: '20px' }}
+          {/* Drop-bin: drag a placed emoji here to delete it */}
+          <div
+            style={{ flexShrink: 0, width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(239, 68, 68, 0.2)', borderRadius: '6px', border: '2px dashed #ef4444' }}
             onDragOver={e => e.preventDefault()}
             onDrop={e => {
               e.preventDefault();
@@ -177,10 +176,17 @@ export default function PostItCanvas({ onClose, onSend }) {
               }
             }}
           >
-            🗑️
+            <img src="/icons/delete.png" alt="Delete" style={{ width: '24px', height: '24px', pointerEvents: 'none' }} />
           </div>
         </div>
-        
+        {/* Actions */}
+        <button onClick={() => { clearCanvas(); setPlacedEmojis([]); }} style={{ padding: '6px 14px', fontSize: '0.95rem', background: 'var(--danger)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Clear</button>
+        {onClose && <button onClick={onClose} style={{ padding: '6px 14px', fontSize: '0.95rem', background: 'var(--panel-bg)', color: 'white', border: '1px solid var(--border)', borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>}
+        <button onClick={sendPostIt} style={{ padding: '6px 18px', fontSize: '1rem', background: 'var(--success)', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>SEND</button>
+      </div>
+
+      {/* Canvas + bg colour picker row */}
+      <div style={{ display: 'flex', gap: '8px', flex: 1, overflow: 'hidden' }}>
         <div style={{ flex: 1, border: '2px solid var(--border)', borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
           <canvas
             ref={canvasRef}
@@ -208,10 +214,11 @@ export default function PostItCanvas({ onClose, onSend }) {
             </div>
           ))}
         </div>
-        
-        <div style={{ width: '40px', display: 'flex', flexDirection: 'column', gap: '5px', overflowY: 'auto' }}>
+
+        {/* Background colour picker — vertical strip on right */}
+        <div style={{ width: '36px', display: 'flex', flexDirection: 'column', gap: '4px', overflowY: 'auto' }}>
           {COLORS.map(c => (
-            <button key={`bg-${c}`} onClick={() => setBgColor(c)} style={{ width: '30px', height: '30px', background: c, border: bgColor === c ? '3px solid white' : '1px solid gray', borderRadius: '4px' }} title="Set Background" />
+            <button key={`bg-${c}`} onClick={() => setBgColor(c)} style={{ width: '28px', height: '28px', background: c, border: bgColor === c ? '3px solid white' : '1px solid gray', borderRadius: '4px' }} title="Set Background" />
           ))}
         </div>
       </div>

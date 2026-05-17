@@ -234,7 +234,7 @@ export default function HabitTracker({ data, userId, onSave, onExit }) {
           <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
              <h2 style={{ color: 'var(--text-color, white)', margin: 0, fontSize: '3rem' }}>Habit Tracker</h2>
              <button onClick={() => {if(onExit) onExit();}} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 25px', fontSize: '1.2rem', fontWeight: 'bold', background: 'var(--border, #444)', color: 'var(--text-color, white)', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
-               <img src="/icons/home.png" alt="Home" style={{ width: '24px', height: '24px' }} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'inline'; }} />
+               <img src="/icons/house.png" alt="Home" style={{ width: '24px', height: '24px' }} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'inline'; }} />
                <span style={{ display: 'none' }}>🏠</span>
                HOME
              </button>
@@ -273,7 +273,7 @@ export default function HabitTracker({ data, userId, onSave, onExit }) {
                 color: 'white'
               }}
             >
-              🗑
+              <img src="/icons/delete.png" alt="Delete" style={{ width: '32px', height: '32px', pointerEvents: 'none' }} />
             </div>
           </div>
         </div>
