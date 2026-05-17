@@ -233,24 +233,28 @@ function App() {
 
   if (viewingMessages) {
     const userMessages = messages[viewingMessages];
-    if (userMessages.length === 0) {
-      setViewingMessages(null);
-      return null;
-    }
     
     return (
       <div style={{ width: '100vw', height: '100vh', background: 'var(--bg-color)', padding: '20px' }}>
-        <PostItViewer 
-          messageDataUrl={userMessages[0]}
-          onClose={() => setViewingMessages(null)}
-          onRead={() => {
-            setMessages(prev => {
-              const remaining = prev[viewingMessages].slice(1);
-              if (remaining.length === 0) setViewingMessages(null);
-              return { ...prev, [viewingMessages]: remaining };
-            });
-          }}
-        />
+        {userMessages.length === 0 ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <button onClick={() => setViewingMessages(null)} style={{ padding: '20px 40px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: '12px', fontSize: '1.2rem', cursor: 'pointer' }}>
+              Close
+            </button>
+          </div>
+        ) : (
+          <PostItViewer 
+            messageDataUrl={userMessages[0]}
+            onClose={() => setViewingMessages(null)}
+            onRead={() => {
+              setMessages(prev => {
+                const remaining = prev[viewingMessages].slice(1);
+                if (remaining.length === 0) setViewingMessages(null);
+                return { ...prev, [viewingMessages]: remaining };
+              });
+            }}
+          />
+        )}
       </div>
     );
   }

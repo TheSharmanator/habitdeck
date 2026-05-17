@@ -126,7 +126,7 @@ export default function KPITracker({ data, userId, onSave, onExit }) {
     if (!isNaN(numVal)) {
       status = (numVal >= kpi.min && numVal <= kpi.max) ? 'success' : 'fail';
       if (status === 'success') {
-        const audio = new Audio('/sounds/sound1.wav');
+        const audio = new Audio('/sounds/sound1.mp3');
         audio.play().catch(() => {});
       }
     }

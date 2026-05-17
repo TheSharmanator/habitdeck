@@ -106,8 +106,10 @@ function VirtualPIN({ onUnlock, expectedPin, isSetup }) {
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [step, setStep] = useState(isSetup ? 'create' : 'enter');
+  const [pinError, setPinError] = useState('');
   
   const handleKey = (k) => {
+    setPinError('');
     if (k === 'DEL') {
       if (step === 'create') setPin(p => p.slice(0, -1));
       else if (step === 'confirm') setConfirmPin(p => p.slice(0, -1));
@@ -122,12 +124,13 @@ function VirtualPIN({ onUnlock, expectedPin, isSetup }) {
   const handleSubmit = () => {
     if (step === 'enter') {
       if (pin === expectedPin) onUnlock();
-      else { alert('Incorrect PIN'); setPin(''); }
+      else { setPinError('Incorrect PIN. Try again.'); setPin(''); }
     } else if (step === 'create') {
       if (pin.length === 4) setStep('confirm');
+      else setPinError('PIN must be 4 digits.');
     } else if (step === 'confirm') {
       if (pin === confirmPin) onUnlock(pin);
-      else { alert('PINs do not match'); setConfirmPin(''); setStep('create'); setPin(''); }
+      else { setPinError('PINs do not match. Start again.'); setConfirmPin(''); setStep('create'); setPin(''); }
     }
   };
 
@@ -142,6 +145,11 @@ function VirtualPIN({ onUnlock, expectedPin, isSetup }) {
       <div style={{ fontSize: '2rem', letterSpacing: '10px', margin: '20px 0' }}>
         {'*'.repeat(val.length).padEnd(4, '·')}
       </div>
+      {pinError && (
+        <div style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid #ef4444', borderRadius: '8px', padding: '10px 20px', marginBottom: '12px', color: '#ef4444', fontWeight: 'bold', fontSize: '1rem' }}>
+          {pinError}
+        </div>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px' }}>
         {['1','2','3','4','5','6','7','8','9','C','0','DEL'].map(k => (
           <button key={k} onClick={() => k==='C' ? (step==='confirm'?setConfirmPin(''):setPin('')) : handleKey(k)} style={{ padding: '20px', fontSize: '1.5rem', background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', borderRadius: '50%' }}>{k}</button>
