@@ -15,6 +15,13 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
+// --- Ensure data directory exists (missing after fresh clone) ---
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+  console.log('[Boot] Created server/data/ directory.');
+}
+
 // --- Paths ---
 const getDataPath = (userId) => path.join(__dirname, 'data', `${userId}_data.json`);
 const getConfigPath = () => path.join(__dirname, 'data', 'appConfig.json');
