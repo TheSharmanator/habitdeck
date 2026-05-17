@@ -248,6 +248,8 @@ export default function SettingsPanel({ userId, onClose }) {
   const [formData, setFormData] = useState({ username: '', pin: '', photo: '', habits: [], kpis: [] });
   const [activeInput, setActiveInput] = useState(null);
   const [nukeConfirmStep, setNukeConfirmStep] = useState(0); // 0=idle, 1=first confirm, 2=second confirm
+  const [showPhotoEdit, setShowPhotoEdit] = useState(false);
+  const [photoHover, setPhotoHover] = useState(false);
 
   useEffect(() => {
     fetch(`/api/data/${userId}`)
@@ -377,13 +379,31 @@ export default function SettingsPanel({ userId, onClose }) {
     <div className="settings-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', padding: '15px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          {formData.photo ? (
-            <img src={formData.photo} alt="Profile" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover' }} />
-          ) : (
-            <div style={{ width: '60px', height: '60px', borderRadius: '50%', backgroundColor: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold' }}>
-              {formData.username ? formData.username[0] : '?'}
-            </div>
-          )}
+          {/* Clickable photo — hover shows camera overlay */}
+          <div
+            onClick={() => setShowPhotoEdit(true)}
+            onMouseEnter={() => setPhotoHover(true)}
+            onMouseLeave={() => setPhotoHover(false)}
+            style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }}
+            title="Click to change photo"
+          >
+            {formData.photo ? (
+              <img src={formData.photo} alt="Profile" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', display: 'block' }} />
+            ) : (
+              <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: 'bold' }}>
+                {formData.username ? formData.username[0].toUpperCase() : '?'}
+              </div>
+            )}
+            {/* Camera overlay */}
+            <div style={{
+              position: 'absolute', inset: 0, borderRadius: '50%',
+              background: 'rgba(0,0,0,0.55)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '1.6rem',
+              opacity: photoHover ? 1 : 0,
+              transition: 'opacity 0.2s'
+            }}>📷</div>
+          </div>
           <h2 style={{ margin: 0 }}>{formData.username}'s Dashboard</h2>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
@@ -475,6 +495,16 @@ export default function SettingsPanel({ userId, onClose }) {
           }} 
           onClose={() => setActiveInput(null)} 
         />
+      )}
+
+      {/* Photo edit modal — fullscreen cropper over settings */}
+      {showPhotoEdit && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 400, background: 'var(--bg-color)' }}>
+          <PhotoUpload onPhotoSaved={(photo) => {
+            if (photo) setFormData(prev => ({ ...prev, photo }));
+            setShowPhotoEdit(false);
+          }} />
+        </div>
       )}
 
       {/* In-app nuke confirmation — no system dialogs */}
