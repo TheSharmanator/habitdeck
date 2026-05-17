@@ -5,7 +5,7 @@ node_modules/
 dist/
 
 # Environment & secrets
-server/data/appConfig.json
+server/data/
 
 # OS junk
 .DS_Store
