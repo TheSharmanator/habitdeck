@@ -117,6 +117,24 @@ export default function KPITracker({ data, userId, onSave, onExit }) {
     }
   }, [pinInput, data.pin]);
 
+  const updateAndSave = (newGrid, newPadlocks) => {
+    setGridData(newGrid);
+    setPadlocks(newPadlocks);
+    
+    const newLogs = { ...(data.kpiLogs || {}) };
+    for (let i = 0; i <= 6; i++) {
+      const dateStr = getTargetDateStr(i);
+      const dayData = {};
+      for (const k of kpis) {
+        if (newGrid[`${i}-${k.id}`]) {
+          dayData[k.id] = newGrid[`${i}-${k.id}`];
+        }
+      }
+      newLogs[dateStr] = { locked: !!newPadlocks[i], data: dayData };
+    }
+    if (onSave) onSave({ ...data, kpiLogs: newLogs });
+  };
+
   const handleSaveValue = (val) => {
     if (!activeCell) return;
     const { dIdx, kpi } = activeCell;
@@ -132,10 +150,11 @@ export default function KPITracker({ data, userId, onSave, onExit }) {
       }
     }
 
-    setGridData(prev => ({
-      ...prev,
+    const nextGrid = {
+      ...gridData,
       [`${dIdx}-${kpi.id}`]: { value: val, status }
-    }));
+    };
+    updateAndSave(nextGrid, padlocks);
     setActiveCell(null);
   };
 
@@ -157,22 +176,8 @@ export default function KPITracker({ data, userId, onSave, onExit }) {
     }
 
     const newPadState = !isCurrentlyClosed;
-    setPadlocks(prev => ({ ...prev, [dIdx]: newPadState }));
-    
-    const dateStr = getTargetDateStr(dIdx);
-    const dayData = {};
-    for (const k of kpis) {
-      if (gridData[`${dIdx}-${k.id}`]) {
-        dayData[k.id] = gridData[`${dIdx}-${k.id}`];
-      }
-    }
-    
-    const newKpiLogs = { 
-      ...(data.kpiLogs || {}), 
-      [dateStr]: { locked: newPadState, data: dayData } 
-    };
-    const newData = { ...data, kpiLogs: newKpiLogs };
-    if (onSave) onSave(newData);
+    const nextPadlocks = { ...padlocks, [dIdx]: newPadState };
+    updateAndSave(gridData, nextPadlocks);
   };
 
   const renderContent = () => {
@@ -293,10 +298,11 @@ export default function KPITracker({ data, userId, onSave, onExit }) {
                       if (isLocked) return;
                       const type = e.dataTransfer.getData('type');
                       if (type === 'X') {
-                        setGridData(prev => ({
-                          ...prev,
+                        const nextGrid = {
+                          ...gridData,
                           [`${dIdx}-${k.id}`]: { value: '❌', status: 'fail' }
-                        }));
+                        };
+                        updateAndSave(nextGrid, padlocks);
                       }
                     }}
                     style={{ 

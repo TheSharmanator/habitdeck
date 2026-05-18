@@ -103,6 +103,24 @@ export default function HabitTracker({ data, userId, onSave, onExit }) {
     }
   }, [pinInput, data.pin]);
 
+  const updateAndSave = (newGrid, newPadlocks) => {
+    setGridData(newGrid);
+    setPadlocks(newPadlocks);
+    
+    const newLogs = { ...(data.habitLogs || {}) };
+    for (let i = 0; i <= 6; i++) {
+      const dateStr = getTargetDateStr(i);
+      const dayData = {};
+      for (const h of habits) {
+        if (newGrid[`${i}-${h.id}`]) {
+          dayData[h.id] = newGrid[`${i}-${h.id}`];
+        }
+      }
+      newLogs[dateStr] = { locked: !!newPadlocks[i], data: dayData };
+    }
+    if (onSave) onSave({ ...data, habitLogs: newLogs });
+  };
+
   const handleDropOnCell = (e, dayIdx, habit) => {
     e.preventDefault();
     setHoverCell(null);
@@ -112,10 +130,11 @@ export default function HabitTracker({ data, userId, onSave, onExit }) {
     const type = e.dataTransfer.getData('type');
     if (!type || type === 'sourcecell') return;
 
-    setGridData(prev => ({
-      ...prev,
+    const nextGrid = {
+      ...gridData,
       [`${dayIdx}-${habit.id}`]: type
-    }));
+    };
+    updateAndSave(nextGrid, padlocks);
     
     if (type === 'happy') {
       const r = Math.floor(Math.random() * 20) + 1;
@@ -144,11 +163,9 @@ export default function HabitTracker({ data, userId, onSave, onExit }) {
     setBinHover(false);
     const source = e.dataTransfer.getData('sourcecell');
     if (source) {
-      setGridData(prev => {
-        const next = { ...prev };
-        delete next[source];
-        return next;
-      });
+      const nextGrid = { ...gridData };
+      delete nextGrid[source];
+      updateAndSave(nextGrid, padlocks);
     }
   };
 
@@ -171,22 +188,8 @@ export default function HabitTracker({ data, userId, onSave, onExit }) {
     }
     
     const newPadState = !isCurrentlyClosed;
-    setPadlocks(prev => ({ ...prev, [dIdx]: newPadState }));
-    
-    const dateStr = getTargetDateStr(dIdx);
-    const dayData = {};
-    for (const h of habits) {
-      if (gridData[`${dIdx}-${h.id}`]) {
-        dayData[h.id] = gridData[`${dIdx}-${h.id}`];
-      }
-    }
-    
-    const newHabitLogs = { 
-      ...(data.habitLogs || {}), 
-      [dateStr]: { locked: newPadState, data: dayData } 
-    };
-    const newData = { ...data, habitLogs: newHabitLogs };
-    if (onSave) onSave(newData);
+    const nextPadlocks = { ...padlocks, [dIdx]: newPadState };
+    updateAndSave(gridData, nextPadlocks);
   };
 
   const renderContent = () => {
