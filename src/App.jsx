@@ -11,6 +11,7 @@ function UserPanel({ userId, username, onOpenSettings, unreadMessages, onOpenPos
   const [data, setData] = useState(null);
   const [currentView, setCurrentView] = useState('home');
   const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [, setTick] = useState(0);
 
   const fetchData = () => {
     fetch(`/api/data/${userId}?t=${Date.now()}`)
@@ -22,6 +23,12 @@ function UserPanel({ userId, username, onOpenSettings, unreadMessages, onOpenPos
   useEffect(() => {
     fetchData();
   }, [userId]);
+
+  // Re-render every minute so the 6am nag check fires without user interaction
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Re-fetch whenever settings panel closes so we pick up PIN / name / photo
   useEffect(() => {
