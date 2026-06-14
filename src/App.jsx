@@ -24,10 +24,15 @@ function UserPanel({ userId, username, onOpenSettings, unreadMessages, onOpenPos
     fetchData();
   }, [userId]);
 
-  // Re-render every minute so the 6am nag check fires without user interaction
+  // Schedule a single re-render at exactly 6am if we haven't reached it yet
   useEffect(() => {
-    const interval = setInterval(() => setTick(t => t + 1), 60000);
-    return () => clearInterval(interval);
+    const now = new Date();
+    const sixAm = new Date(now);
+    sixAm.setHours(6, 0, 0, 0);
+    if (now >= sixAm) return; // already past 6am, nag renders immediately
+    const msUntil6am = sixAm - now;
+    const timer = setTimeout(() => setTick(t => t + 1), msUntil6am);
+    return () => clearTimeout(timer);
   }, []);
 
   // Re-fetch whenever settings panel closes so we pick up PIN / name / photo
