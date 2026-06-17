@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import HomePanel from './components/Home/HomePanel';
 import HabitTracker from './components/Habits/HabitTracker';
 import KPITracker from './components/KPIs/KPITracker';
@@ -6,6 +6,52 @@ import PostItCanvas from './components/PostIt/PostItCanvas';
 import PostItViewer from './components/PostIt/PostItViewer';
 import SettingsPanel from './components/Settings/SettingsPanel';
 import BackupSetup from './components/BackupSetup';
+
+function isDndTime() {
+  const now = new Date();
+  const mins = now.getHours() * 60 + now.getMinutes();
+  return mins >= 21 * 60 || mins < 5 * 60 + 30;
+}
+
+function DndScreen({ onWake }) {
+  const [time, setTime] = useState('');
+
+  useEffect(() => {
+    const update = () => {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      setTime(`${h}:${m}:${s}`);
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div
+      onClick={onWake}
+      onTouchStart={onWake}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: '#000',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'none', userSelect: 'none',
+      }}
+    >
+      <span style={{
+        color: '#3a3a3a',
+        fontSize: '6rem',
+        fontFamily: 'monospace',
+        fontWeight: '300',
+        letterSpacing: '0.05em',
+      }}>
+        {time}
+      </span>
+    </div>
+  );
+}
 
 function UserPanel({ userId, username, onOpenSettings, unreadMessages, onOpenPostIt, onOpenMessages, settingsJustClosed }) {
   const [data, setData] = useState(null);
@@ -200,8 +246,59 @@ function App() {
   const [messages, setMessages] = useState({ u1: [], u2: [] });
   const [showBackupSetup, setShowBackupSetup] = useState(false);
   const [configChecked, setConfigChecked] = useState(false);
-  // Incremented each time settings closes — UserPanel watches this to re-fetch
   const [settingsCloseCount, setSettingsCloseCount] = useState({ u1: 0, u2: 0 });
+  const [dndActive, setDndActive] = useState(() => isDndTime());
+  const inactivityRef = useRef(null);
+
+  // Schedule re-evaluation at the next DND boundary (21:00 or 05:30)
+  useEffect(() => {
+    let timer;
+    const scheduleNext = () => {
+      const now = new Date();
+      const mins = now.getHours() * 60 + now.getMinutes();
+      const target = new Date(now);
+      if (mins < 5 * 60 + 30) {
+        target.setHours(5, 30, 0, 0);
+      } else if (mins < 21 * 60) {
+        target.setHours(21, 0, 0, 0);
+      } else {
+        target.setDate(target.getDate() + 1);
+        target.setHours(5, 30, 0, 0);
+      }
+      timer = setTimeout(() => {
+        setDndActive(isDndTime());
+        scheduleNext();
+      }, Math.max(0, target - now) + 500);
+    };
+    scheduleNext();
+    return () => clearTimeout(timer);
+  }, []);
+
+  // When screen is woken during DND, re-blank after 2 min of inactivity
+  useEffect(() => {
+    if (dndActive) {
+      clearTimeout(inactivityRef.current);
+      return;
+    }
+    if (!isDndTime()) return;
+
+    const arm = () => {
+      clearTimeout(inactivityRef.current);
+      inactivityRef.current = setTimeout(() => setDndActive(true), 2 * 60 * 1000);
+    };
+    arm();
+    window.addEventListener('mousemove', arm);
+    window.addEventListener('mousedown', arm);
+    window.addEventListener('keydown', arm);
+    window.addEventListener('touchstart', arm);
+    return () => {
+      clearTimeout(inactivityRef.current);
+      window.removeEventListener('mousemove', arm);
+      window.removeEventListener('mousedown', arm);
+      window.removeEventListener('keydown', arm);
+      window.removeEventListener('touchstart', arm);
+    };
+  }, [dndActive]);
 
   const closeSettings = (userId) => {
     setActiveFullScreenSettings(null);
@@ -231,10 +328,14 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
-  if (!configChecked) return null; // wait for config check before rendering
+  if (!configChecked) return null;
 
   if (showBackupSetup) {
     return <BackupSetup onComplete={() => setShowBackupSetup(false)} />;
+  }
+
+  if (dndActive) {
+    return <DndScreen onWake={() => setDndActive(false)} />;
   }
 
   if (activeFullScreenSettings) {
