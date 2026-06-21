@@ -2,7 +2,6 @@ import React, { useRef, useState, useEffect } from 'react';
 
 const COLORS = ['#000000', '#ffffff', '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7'];
 const BRUSH_SIZES = [2, 6, 12];
-// Map to PNG files in /public/emojis/ — avoids relying on system emoji fonts (broken on Pi/Linux)
 const EMOJIS = [
   { key: 'kiss',      src: '/emojis/kiss.png' },
   { key: 'thumbsup',  src: '/emojis/thumbsup.png' },
@@ -23,16 +22,45 @@ const EMOJIS = [
   { key: 'shocked',   src: '/emojis/shocked.png' },
   { key: 'confused',  src: '/emojis/confused.png' },
 ];
+const SHAPE_TOOLS = ['circle', 'square', 'triangle', 'hexagon'];
+
+function hexToRgba(hex) {
+  return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16), 255];
+}
+
+const FillBucketIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M16.5 4.5l3 3-10 10H6.5v-3l10-10z"/>
+    <circle cx="20" cy="20" r="2.2" fill="currentColor" stroke="none"/>
+    <line x1="20" y1="17.8" x2="20" y2="13"/>
+  </svg>
+);
+
+const ShapeIcon = ({ shape }) => {
+  switch (shape) {
+    case 'circle':
+      return <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2.5"/></svg>;
+    case 'square':
+      return <svg width="22" height="22" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"/></svg>;
+    case 'triangle':
+      return <svg width="22" height="22" viewBox="0 0 24 24"><polygon points="12,2 22,22 2,22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round"/></svg>;
+    case 'hexagon':
+      return <svg width="22" height="22" viewBox="0 0 24 24"><polygon points="12,2 21,7 21,17 12,22 3,17 3,7" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round"/></svg>;
+    default: return null;
+  }
+};
 
 export default function PostItCanvas({ onClose, onSend }) {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [color, setColor] = useState(COLORS[0]);
-  const [bgColor, setBgColor] = useState('#fef08a'); // Default postit yellow
+  const [bgColor, setBgColor] = useState('#fef08a');
   const [brushSize, setBrushSize] = useState(BRUSH_SIZES[1]);
-  const [eraserMode, setEraserMode] = useState(false);
+  const [activeTool, setActiveTool] = useState('draw'); // 'draw' | 'eraser' | 'fill' | shape names
   const [placedEmojis, setPlacedEmojis] = useState([]);
   const [emojiSize, setEmojiSize] = useState(150);
+  const shapeStartRef = useRef(null);
+  const savedImageDataRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -51,14 +79,104 @@ export default function PostItCanvas({ onClose, onSend }) {
   };
 
   useEffect(() => {
-    if (canvasRef.current && !eraserMode) {
-      clearCanvas(); // Reapply background color when it changes
+    if (canvasRef.current && activeTool !== 'eraser') {
+      clearCanvas();
     }
   }, [bgColor]);
 
+  const floodFill = (startX, startY) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const { width, height } = canvas;
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+
+    const sx = Math.floor(startX), sy = Math.floor(startY);
+    if (sx < 0 || sx >= width || sy < 0 || sy >= height) return;
+
+    const ti = (sy * width + sx) * 4;
+    const tr = data[ti], tg = data[ti+1], tb = data[ti+2], ta = data[ti+3];
+    const [fr, fg, fb, fa] = hexToRgba(color);
+    if (tr === fr && tg === fg && tb === fb && ta === fa) return;
+
+    const tol = 30;
+    const matches = (i) => (
+      Math.abs(data[i]-tr) <= tol && Math.abs(data[i+1]-tg) <= tol &&
+      Math.abs(data[i+2]-tb) <= tol && Math.abs(data[i+3]-ta) <= tol
+    );
+
+    const visited = new Uint8Array(width * height);
+    const stack = [sx, sy];
+
+    while (stack.length) {
+      const py = stack.pop(), px = stack.pop();
+      if (px < 0 || px >= width || py < 0 || py >= height) continue;
+      const fi = py * width + px;
+      if (visited[fi]) continue;
+      const pi = fi * 4;
+      if (!matches(pi)) continue;
+      visited[fi] = 1;
+      data[pi] = fr; data[pi+1] = fg; data[pi+2] = fb; data[pi+3] = fa;
+      stack.push(px+1, py, px-1, py, px, py+1, px, py-1);
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+  };
+
+  const drawShape = (ctx, shape, x1, y1, x2, y2) => {
+    const r = Math.hypot(x2 - x1, y2 - y1);
+    if (r < 2) return;
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = brushSize;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    switch (shape) {
+      case 'circle':
+        ctx.arc(x1, y1, r, 0, Math.PI * 2);
+        break;
+      case 'square':
+        ctx.rect(x1 - r, y1 - r, r * 2, r * 2);
+        break;
+      case 'triangle':
+        for (let i = 0; i < 3; i++) {
+          const a = (Math.PI * 2 / 3) * i - Math.PI / 2;
+          i === 0
+            ? ctx.moveTo(x1 + r * Math.cos(a), y1 + r * Math.sin(a))
+            : ctx.lineTo(x1 + r * Math.cos(a), y1 + r * Math.sin(a));
+        }
+        ctx.closePath();
+        break;
+      case 'hexagon':
+        for (let i = 0; i < 6; i++) {
+          const a = (Math.PI / 3) * i - Math.PI / 6;
+          i === 0
+            ? ctx.moveTo(x1 + r * Math.cos(a), y1 + r * Math.sin(a))
+            : ctx.lineTo(x1 + r * Math.cos(a), y1 + r * Math.sin(a));
+        }
+        ctx.closePath();
+        break;
+    }
+    ctx.stroke();
+  };
+
   const startDrawing = (e) => {
     const { offsetX, offsetY } = getCoordinates(e);
-    const ctx = canvasRef.current.getContext('2d');
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+
+    if (activeTool === 'fill') {
+      floodFill(offsetX, offsetY);
+      return;
+    }
+
+    if (SHAPE_TOOLS.includes(activeTool)) {
+      savedImageDataRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      shapeStartRef.current = { x: offsetX, y: offsetY };
+      setIsDrawing(true);
+      return;
+    }
+
     ctx.beginPath();
     ctx.moveTo(offsetX, offsetY);
     setIsDrawing(true);
@@ -68,20 +186,29 @@ export default function PostItCanvas({ onClose, onSend }) {
     if (!isDrawing) return;
     const { offsetX, offsetY } = getCoordinates(e);
     const ctx = canvasRef.current.getContext('2d');
-    ctx.lineTo(offsetX, offsetY);
-    if (eraserMode) {
-      ctx.strokeStyle = bgColor; // Draw with background color to erase
-    } else {
-      ctx.strokeStyle = color;
+
+    if (SHAPE_TOOLS.includes(activeTool) && shapeStartRef.current && savedImageDataRef.current) {
+      ctx.putImageData(savedImageDataRef.current, 0, 0);
+      drawShape(ctx, activeTool, shapeStartRef.current.x, shapeStartRef.current.y, offsetX, offsetY);
+      return;
     }
+
+    ctx.lineTo(offsetX, offsetY);
+    ctx.strokeStyle = activeTool === 'eraser' ? bgColor : color;
     ctx.lineWidth = brushSize;
     ctx.lineCap = 'round';
     ctx.stroke();
   };
 
   const endDrawing = () => {
-    const ctx = canvasRef.current.getContext('2d');
-    ctx.closePath();
+    if (isDrawing) {
+      if (SHAPE_TOOLS.includes(activeTool)) {
+        savedImageDataRef.current = null;
+        shapeStartRef.current = null;
+      } else {
+        canvasRef.current.getContext('2d').closePath();
+      }
+    }
     setIsDrawing(false);
   };
 
@@ -99,10 +226,8 @@ export default function PostItCanvas({ onClose, onSend }) {
   const handleDrop = (e) => {
     e.preventDefault();
     const { offsetX, offsetY } = getCoordinates(e);
-    
     const newEmojiRaw = e.dataTransfer.getData('new_emoji');
     const moveEmojiId = e.dataTransfer.getData('move_emoji');
-    
     if (newEmojiRaw) {
       try {
         const emojiObj = JSON.parse(newEmojiRaw);
@@ -116,15 +241,14 @@ export default function PostItCanvas({ onClose, onSend }) {
   const sendPostIt = async () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    // Draw each placed emoji PNG onto the canvas before capturing
     await Promise.all(placedEmojis.map(em => new Promise(resolve => {
       const img = new Image();
       img.onload = () => {
-        const s = em.size || 48; // fallback
+        const s = em.size || 48;
         ctx.drawImage(img, em.x - s/2, em.y - s/2, s, s);
         resolve();
       };
-      img.onerror = resolve; // skip broken images gracefully
+      img.onerror = resolve;
       img.src = em.src;
     })));
     if (onSend) {
@@ -135,23 +259,43 @@ export default function PostItCanvas({ onClose, onSend }) {
     setPlacedEmojis([]);
   };
 
+  const toolBtn = (tool, children, title) => (
+    <button
+      key={tool}
+      onClick={() => setActiveTool(tool)}
+      title={title}
+      style={{
+        width: '38px', height: '38px',
+        background: activeTool === tool ? 'var(--accent)' : 'var(--panel-bg)',
+        color: 'white',
+        border: activeTool === tool ? '2px solid white' : '1px solid var(--border)',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}
+    >
+      {children}
+    </button>
+  );
+
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
       {/* Top section: Two rows */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '6px', borderBottom: '1px solid var(--border)' }}>
-        
-        {/* Row 1: Ink colours + Brushes + Eraser + Actions */}
+
+        {/* Row 1: Ink colours + Brushes + Tools + Actions */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-          
-          {/* Colours + Brushes container */}
-          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+
+          {/* Left cluster */}
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
             {/* Ink colours */}
             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
               {COLORS.map(c => (
-                <button key={`ink-${c}`} onClick={() => {setColor(c); setEraserMode(false);}} style={{ width: '36px', height: '36px', background: c, border: color === c && !eraserMode ? '3px solid white' : '1px solid gray', borderRadius: '50%' }} />
+                <button key={`ink-${c}`} onClick={() => { setColor(c); setActiveTool('draw'); }} style={{ width: '36px', height: '36px', background: c, border: color === c && activeTool === 'draw' ? '3px solid white' : '1px solid gray', borderRadius: '50%' }} />
               ))}
             </div>
-            
+
             {/* Brush sizes */}
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
               {BRUSH_SIZES.map(s => (
@@ -159,9 +303,19 @@ export default function PostItCanvas({ onClose, onSend }) {
                   <div style={{ width: s, height: s, background: 'black', borderRadius: '50%' }}></div>
                 </button>
               ))}
-              <button onClick={() => setEraserMode(true)} style={{ padding: '4px', background: eraserMode ? 'var(--accent)' : 'var(--panel-bg)', border: '1px solid var(--border)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            </div>
+
+            {/* Tool buttons: Eraser + Fill + Shapes */}
+            <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+              <button
+                onClick={() => setActiveTool('eraser')}
+                title="Eraser"
+                style={{ padding: '4px', background: activeTool === 'eraser' ? 'var(--accent)' : 'var(--panel-bg)', border: activeTool === 'eraser' ? '2px solid white' : '1px solid var(--border)', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '38px', height: '38px' }}
+              >
                 <img src="/icons/eraser.png" alt="Eraser" style={{ width: '28px', height: '28px' }} />
               </button>
+              {toolBtn('fill', <FillBucketIcon />, 'Fill (paint bucket)')}
+              {SHAPE_TOOLS.map(shape => toolBtn(shape, <ShapeIcon shape={shape} />, shape.charAt(0).toUpperCase() + shape.slice(1)))}
             </div>
           </div>
 
@@ -181,7 +335,7 @@ export default function PostItCanvas({ onClose, onSend }) {
             <button onClick={() => setEmojiSize(150)} style={{ padding: '4px 12px', fontSize: '1rem', background: emojiSize === 150 ? 'var(--accent)' : 'transparent', color: 'white', border: emojiSize === 150 ? '1px solid var(--accent)' : '1px solid var(--border)', borderRadius: '4px', cursor: 'pointer' }}>Med</button>
             <button onClick={() => setEmojiSize(300)} style={{ padding: '4px 12px', fontSize: '1rem', background: emojiSize === 300 ? 'var(--accent)' : 'transparent', color: 'white', border: emojiSize === 300 ? '1px solid var(--accent)' : '1px solid var(--border)', borderRadius: '4px', cursor: 'pointer' }}>Large</button>
           </div>
-          
+
           <div style={{ width: '1px', height: '24px', background: 'var(--border)', margin: '0 4px' }} />
 
           {/* Emoji strip */}
@@ -205,9 +359,7 @@ export default function PostItCanvas({ onClose, onSend }) {
             onDrop={e => {
               e.preventDefault();
               const moveEmojiId = e.dataTransfer.getData('move_emoji');
-              if (moveEmojiId) {
-                setPlacedEmojis(prev => prev.filter(em => em.id !== moveEmojiId));
-              }
+              if (moveEmojiId) setPlacedEmojis(prev => prev.filter(em => em.id !== moveEmojiId));
             }}
           >
             <img src="/icons/delete.png" alt="Delete" style={{ width: '30px', height: '30px', pointerEvents: 'none' }} />
@@ -220,7 +372,7 @@ export default function PostItCanvas({ onClose, onSend }) {
         <div style={{ flex: 1, border: '2px solid var(--border)', borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
           <canvas
             ref={canvasRef}
-            style={{ width: '100%', height: '100%', touchAction: 'none' }}
+            style={{ width: '100%', height: '100%', touchAction: 'none', cursor: 'crosshair' }}
             onMouseDown={startDrawing}
             onMouseMove={draw}
             onMouseUp={endDrawing}
@@ -234,12 +386,10 @@ export default function PostItCanvas({ onClose, onSend }) {
           {placedEmojis.map(em => {
             const s = em.size || 48;
             return (
-              <div 
+              <div
                 key={em.id}
                 draggable
-                onDragStart={(e) => {
-                  e.dataTransfer.setData('move_emoji', em.id);
-                }}
+                onDragStart={(e) => { e.dataTransfer.setData('move_emoji', em.id); }}
                 style={{ position: 'absolute', left: em.x, top: em.y, width: `${s}px`, height: `${s}px`, transform: 'translate(-50%, -50%)', cursor: 'grab', touchAction: 'none' }}
               >
                 <img src={em.src} alt={em.key} style={{ width: `${s}px`, height: `${s}px`, objectFit: 'contain', pointerEvents: 'none' }} />
