@@ -11,10 +11,11 @@ export default function HabitTracker({ data, userId, onSave, onExit }) {
   const [pinInput, setPinInput] = useState('');
   
   const [gridData, setGridData] = useState({});
-  const [padlocks, setPadlocks] = useState({}); 
+  const [padlocks, setPadlocks] = useState({});
   const [hoverCell, setHoverCell] = useState(null);
   const [binHover, setBinHover] = useState(false);
   const [customAlert, setCustomAlert] = useState(null);
+  const [drag, setDrag] = useState(null); // { kind: 'icon' | 'cell', value, sourceKey, x, y }
 
   const generateDays = () => {
     const daysArr = [];
@@ -121,21 +122,16 @@ export default function HabitTracker({ data, userId, onSave, onExit }) {
     if (onSave) onSave({ ...data, habitLogs: newLogs });
   };
 
-  const handleDropOnCell = (e, dayIdx, habit) => {
-    e.preventDefault();
-    setHoverCell(null);
-    if (padlocks[dayIdx]) return; 
+  const placeIconOnCell = (dayIdx, habit, type) => {
+    if (padlocks[dayIdx]) return;
     if (!isRequired(habit, dayIdx)) return;
-    
-    const type = e.dataTransfer.getData('type');
-    if (!type || type === 'sourcecell') return;
 
     const nextGrid = {
       ...gridData,
       [`${dayIdx}-${habit.id}`]: type
     };
     updateAndSave(nextGrid, padlocks);
-    
+
     if (type === 'happy') {
       const r = Math.floor(Math.random() * 20) + 1;
       const audio = new Audio(`/sounds/sound${r}.mp3`);
@@ -143,31 +139,58 @@ export default function HabitTracker({ data, userId, onSave, onExit }) {
     }
   };
 
-  const handleDragOverCell = (e, dayIdx, habit) => {
-    if (padlocks[dayIdx]) return;
-    if (!isRequired(habit, dayIdx)) return;
-    
-    const isSourceCell = Array.from(e.dataTransfer.types || []).some(t => t.toLowerCase() === 'sourcecell');
-    if (!isSourceCell) {
-        e.preventDefault();
-        setHoverCell(`${dayIdx}-${habit.id}`);
-    }
+  const removeCell = (sourceKey) => {
+    const nextGrid = { ...gridData };
+    delete nextGrid[sourceKey];
+    updateAndSave(nextGrid, padlocks);
   };
 
-  const handleDragLeaveCell = (e) => {
-    setHoverCell(null);
-  };
-
-  const handleDropOnBin = (e) => {
+  const startDrag = (e, kind, value, sourceKey) => {
     e.preventDefault();
-    setBinHover(false);
-    const source = e.dataTransfer.getData('sourcecell');
-    if (source) {
-      const nextGrid = { ...gridData };
-      delete nextGrid[source];
-      updateAndSave(nextGrid, padlocks);
-    }
+    setDrag({ kind, value, sourceKey, x: e.clientX, y: e.clientY });
   };
+
+  // Pointer-based drag (works for mouse, touch and pen) — native HTML5
+  // dragstart/drop never fires on touchscreens, which this app runs on.
+  useEffect(() => {
+    if (!drag) return;
+
+    const handleMove = (e) => {
+      setDrag(d => (d ? { ...d, x: e.clientX, y: e.clientY } : d));
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const cellEl = el && el.closest('[data-day-idx]');
+      setHoverCell(cellEl ? `${cellEl.dataset.dayIdx}-${cellEl.dataset.habitId}` : null);
+      const binEl = el && el.closest('[data-bin]');
+      setBinHover(!!binEl);
+    };
+
+    const handleUp = (e) => {
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const cellEl = el && el.closest('[data-day-idx]');
+      const binEl = el && el.closest('[data-bin]');
+
+      if (binEl && drag.kind === 'cell') {
+        removeCell(drag.sourceKey);
+      } else if (cellEl && drag.kind === 'icon') {
+        const dayIdx = Number(cellEl.dataset.dayIdx);
+        const habit = habits.find(h => String(h.id) === cellEl.dataset.habitId);
+        if (habit) placeIconOnCell(dayIdx, habit, drag.value);
+      }
+
+      setDrag(null);
+      setHoverCell(null);
+      setBinHover(false);
+    };
+
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleUp);
+    window.addEventListener('pointercancel', handleUp);
+    return () => {
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleUp);
+      window.removeEventListener('pointercancel', handleUp);
+    };
+  }, [drag, gridData, padlocks, habits]);
 
   const togglePadlock = (dIdx) => {
     const isCurrentlyClosed = padlocks[dIdx];
@@ -244,33 +267,29 @@ export default function HabitTracker({ data, userId, onSave, onExit }) {
           </div>
           <div style={{ display: 'flex', gap: '20px' }}>
             {ICONS.map(icon => (
-              <div 
+              <div
                 key={icon.id}
-                draggable 
-                onDragStart={(e) => {
-                  e.dataTransfer.setData('type', icon.id);
-                }}
-                style={{ 
-                  width: '60px', height: '60px', 
+                onPointerDown={(e) => startDrag(e, 'icon', icon.id)}
+                style={{
+                  width: '60px', height: '60px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: 'var(--border, rgba(255,255,255,0.1))', 
-                  borderRadius: '50%', 
+                  background: 'var(--border, rgba(255,255,255,0.1))',
+                  borderRadius: '50%',
                   cursor: 'grab',
-                  fontSize: '2rem'
+                  fontSize: '2rem',
+                  touchAction: 'none'
                 }}
               >
                 <img src={icon.src} alt={icon.id} style={{ width: '40px', height: '40px', objectFit: 'contain', pointerEvents: 'none' }} />
               </div>
             ))}
             <div
-              onDragOver={(e) => { e.preventDefault(); setBinHover(true); }}
-              onDragLeave={() => setBinHover(false)}
-              onDrop={handleDropOnBin}
+              data-bin="true"
               style={{
-                width: '60px', height: '60px', 
+                width: '60px', height: '60px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: binHover ? '#ef4444' : 'var(--border, rgba(255,255,255,0.1))', 
-                borderRadius: '50%', 
+                background: binHover ? '#ef4444' : 'var(--border, rgba(255,255,255,0.1))',
+                borderRadius: '50%',
                 fontSize: '2rem',
                 transition: 'background 0.2s',
                 color: 'white'
@@ -318,28 +337,23 @@ export default function HabitTracker({ data, userId, onSave, onExit }) {
                 else if (cellValue === 'sad') bgColor = 'var(--danger, #ef4444)';
 
                 return (
-                  <div 
+                  <div
                     key={h.id}
                     className="cell drop-zone"
-                    draggable={!!cellValue && !isLocked}
-                    onDragStart={(e) => {
-                      if (!isLocked && cellValue) {
-                        e.dataTransfer.setData('sourcecell', `${dIdx}-${h.id}`);
-                      } else {
-                        e.preventDefault();
-                      }
+                    data-day-idx={dIdx}
+                    data-habit-id={h.id}
+                    onPointerDown={(e) => {
+                      if (cellValue && !isLocked) startDrag(e, 'cell', cellValue, `${dIdx}-${h.id}`);
                     }}
-                    onDrop={(e) => handleDropOnCell(e, dIdx, h)}
-                    onDragOver={(e) => handleDragOverCell(e, dIdx, h)}
-                    onDragLeave={handleDragLeaveCell}
-                    style={{ 
-                      background: bgColor, 
-                      borderRadius: '8px', 
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                      minHeight: '70px', 
+                    style={{
+                      background: bgColor,
+                      borderRadius: '8px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      minHeight: '70px',
                       transition: 'background 0.2s',
                       opacity: required ? 1 : 0.5,
-                      cursor: (cellValue && !isLocked) ? 'grab' : 'default'
+                      cursor: (cellValue && !isLocked) ? 'grab' : 'default',
+                      touchAction: 'none'
                     }}
                   >
                     {cellValue === 'happy' && <img src="/icons/happysmiley.png" alt="happy" style={{ width: '40px', height: '40px', pointerEvents: 'none' }} />}
@@ -365,6 +379,22 @@ export default function HabitTracker({ data, userId, onSave, onExit }) {
               <button onClick={() => setCustomAlert(null)} style={{ padding: '20px 60px', fontSize: '1.8rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>OK</button>
             </div>
           </div>
+        )}
+
+        {drag && (
+          <img
+            src={drag.value === 'happy' ? '/icons/happysmiley.png' : '/icons/sadsmiley.png'}
+            alt={drag.value}
+            style={{
+              position: 'fixed',
+              left: drag.x - 20,
+              top: drag.y - 20,
+              width: '40px', height: '40px',
+              pointerEvents: 'none',
+              zIndex: 10001,
+              opacity: 0.85
+            }}
+          />
         )}
       </div>
     );
