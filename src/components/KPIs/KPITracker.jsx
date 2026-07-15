@@ -38,9 +38,11 @@ export default function KPITracker({ data, userId, onSave, onExit }) {
   const [pinInput, setPinInput] = useState('');
   
   const [gridData, setGridData] = useState({});
-  const [padlocks, setPadlocks] = useState({}); 
+  const [padlocks, setPadlocks] = useState({});
   const [activeCell, setActiveCell] = useState(null);
   const [customAlert, setCustomAlert] = useState(null);
+  const [drag, setDrag] = useState(null); // { x, y } while dragging the fail (X) icon
+  const [hoverCell, setHoverCell] = useState(null);
 
   const generateDays = () => {
     const daysArr = [];
@@ -158,6 +160,54 @@ export default function KPITracker({ data, userId, onSave, onExit }) {
     setActiveCell(null);
   };
 
+  const markFail = (dIdx, kpi) => {
+    const nextGrid = {
+      ...gridData,
+      [`${dIdx}-${kpi.id}`]: { value: '❌', status: 'fail' }
+    };
+    updateAndSave(nextGrid, padlocks);
+  };
+
+  const startDrag = (e) => {
+    e.preventDefault();
+    setDrag({ x: e.clientX, y: e.clientY });
+  };
+
+  // Pointer-based drag (works for mouse, touch and pen) — native HTML5
+  // dragstart/drop never fires on touchscreens, which this app runs on.
+  useEffect(() => {
+    if (!drag) return;
+
+    const handleMove = (e) => {
+      setDrag(d => (d ? { ...d, x: e.clientX, y: e.clientY } : d));
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const cellEl = el && el.closest('[data-day-idx]');
+      setHoverCell(cellEl ? `${cellEl.dataset.dayIdx}-${cellEl.dataset.kpiId}` : null);
+    };
+
+    const handleUp = (e) => {
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const cellEl = el && el.closest('[data-day-idx]');
+      if (cellEl) {
+        const dayIdx = Number(cellEl.dataset.dayIdx);
+        const kpi = kpis.find(k => String(k.id) === cellEl.dataset.kpiId);
+        const isLocked = padlocks[dayIdx];
+        if (kpi && !isLocked) markFail(dayIdx, kpi);
+      }
+      setDrag(null);
+      setHoverCell(null);
+    };
+
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleUp);
+    window.addEventListener('pointercancel', handleUp);
+    return () => {
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleUp);
+      window.removeEventListener('pointercancel', handleUp);
+    };
+  }, [drag, gridData, padlocks, kpis]);
+
   const togglePadlock = (dIdx) => {
     const isCurrentlyClosed = padlocks[dIdx];
     if (!isCurrentlyClosed) {
@@ -231,19 +281,17 @@ export default function KPITracker({ data, userId, onSave, onExit }) {
              </button>
           </div>
           <div style={{ display: 'flex', gap: '20px' }}>
-            <div 
-              draggable 
-              onDragStart={(e) => {
-                e.dataTransfer.setData('type', 'X');
-              }}
-              style={{ 
-                width: '60px', height: '60px', 
+            <div
+              onPointerDown={startDrag}
+              style={{
+                width: '60px', height: '60px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'var(--border, rgba(255,255,255,0.1))', 
-                borderRadius: '50%', 
+                background: 'var(--border, rgba(255,255,255,0.1))',
+                borderRadius: '50%',
                 cursor: 'grab',
                 fontSize: '2rem',
-                color: 'var(--danger, #ef4444)'
+                color: 'var(--danger, #ef4444)',
+                touchAction: 'none'
               }}
               title="Drag to fail a KPI without entering data"
             >
@@ -283,34 +331,22 @@ export default function KPITracker({ data, userId, onSave, onExit }) {
                 let bgColor = 'var(--border, rgba(255,255,255,0.05))';
                 if (cellData.status === 'success') bgColor = 'var(--success, #22c55e)';
                 if (cellData.status === 'fail') bgColor = 'var(--danger, #ef4444)';
+                if (hoverCell === `${dIdx}-${k.id}` && !isLocked) bgColor = 'var(--danger, #ef4444)';
 
                 return (
-                  <div 
+                  <div
                     key={k.id}
+                    data-day-idx={dIdx}
+                    data-kpi-id={k.id}
                     onClick={() => {
                       if (!isLocked) setActiveCell({ dIdx, kpi: k });
                     }}
-                    onDragOver={(e) => {
-                      if (!isLocked) e.preventDefault();
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      if (isLocked) return;
-                      const type = e.dataTransfer.getData('type');
-                      if (type === 'X') {
-                        const nextGrid = {
-                          ...gridData,
-                          [`${dIdx}-${k.id}`]: { value: '❌', status: 'fail' }
-                        };
-                        updateAndSave(nextGrid, padlocks);
-                      }
-                    }}
-                    style={{ 
-                      background: bgColor, 
-                      borderRadius: '8px', 
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                    style={{
+                      background: bgColor,
+                      borderRadius: '8px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: '1.2rem',
-                      minHeight: '70px', 
+                      minHeight: '70px',
                       transition: 'background 0.2s',
                       cursor: isLocked ? 'default' : 'pointer'
                     }}
@@ -329,6 +365,25 @@ export default function KPITracker({ data, userId, onSave, onExit }) {
             );
           })}
         </div>
+
+        {drag && (
+          <div
+            style={{
+              position: 'fixed',
+              left: drag.x - 20,
+              top: drag.y - 20,
+              width: '40px', height: '40px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '2rem',
+              color: 'var(--danger, #ef4444)',
+              pointerEvents: 'none',
+              zIndex: 10001,
+              opacity: 0.85
+            }}
+          >
+            ❌
+          </div>
+        )}
 
         {activeCell && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999 }}>
