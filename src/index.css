@@ -66,3 +66,521 @@ body, html {
 .annoying-flash {
   animation: annoying-flash 0.3s infinite alternate;
 }
+
+/* ===================== Mobile Entry App ===================== */
+
+.mobile-app {
+  width: 100%;
+  height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-screen {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+/* Fills the whole screen deliberately: hero block pinned toward the top,
+   the main interactive block centered in the remaining space, a footer
+   pinned to the bottom — instead of one small card floating dead-center
+   with empty space above and below on tall phone screens. */
+.mobile-hero-layout {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 32px;
+}
+
+.mobile-hero-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 8vh;
+}
+
+.mobile-hero-icon {
+  font-size: 4rem;
+  margin-bottom: 12px;
+}
+
+.mobile-pin-photo {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--accent);
+  margin-bottom: 12px;
+}
+
+.mobile-title {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.mobile-subtitle {
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.mobile-subtitle.error {
+  color: var(--danger);
+}
+
+.mobile-user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.mobile-user-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 18px 20px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  color: var(--text-main);
+  cursor: pointer;
+  text-align: left;
+}
+
+.mobile-user-row:active {
+  transform: scale(0.98);
+  background: rgba(255,255,255,0.08);
+}
+
+.mobile-user-row:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.mobile-user-photo {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.mobile-user-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.mobile-user-row-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mobile-user-row-name {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.mobile-user-row-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.mobile-user-row-chevron {
+  font-size: 1.6rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.mobile-hero-footer {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  padding-bottom: 8px;
+}
+
+.mobile-pin-dots {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.mobile-pin-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: transparent;
+}
+
+.mobile-pin-dot.filled {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.mobile-numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  width: 100%;
+  max-width: 340px;
+}
+
+.mobile-numpad-key {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: none;
+  background: var(--border);
+  color: var(--text-main);
+  font-size: 1.6rem;
+  cursor: pointer;
+}
+
+.mobile-numpad-key:active {
+  transform: scale(0.92);
+  background: var(--accent);
+}
+
+/* Fixed app shell: header pinned top, content scrolls in the middle,
+   tab bar pinned bottom (thumb zone) — standard native-app chrome
+   instead of a page that reads top-to-bottom like a desktop site. */
+.mobile-shell {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: max(14px, env(safe-area-inset-top)) 20px 14px;
+  flex-shrink: 0;
+}
+
+.mobile-header-user {
+  font-size: 1.3rem;
+  font-weight: bold;
+}
+
+.mobile-link-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.mobile-main {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 16px 16px;
+}
+
+.mobile-bottom-nav {
+  display: flex;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  background: var(--panel-bg);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.mobile-nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 0 12px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.mobile-nav-icon {
+  font-size: 1.5rem;
+}
+
+.mobile-nav-btn.active {
+  color: var(--accent);
+}
+
+.mobile-day-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 0 8px;
+}
+
+.mobile-day-nav-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  color: var(--text-main);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.mobile-day-nav-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.mobile-day-nav-btn:active:not(:disabled) {
+  transform: scale(0.92);
+  background: var(--accent);
+}
+
+.mobile-day-nav-label {
+  flex: 1;
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: bold;
+}
+
+.mobile-today-btn {
+  display: block;
+  margin: 0 auto 16px;
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.mobile-empty-msg {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.mobile-habit-list, .mobile-kpi-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobile-habit-row, .mobile-kpi-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.mobile-habit-row.not-required {
+  opacity: 0.5;
+}
+
+.mobile-habit-label {
+  font-weight: bold;
+  flex: 1;
+}
+
+.mobile-habit-label small {
+  display: block;
+  font-weight: normal;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.mobile-habit-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.mobile-icon-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: rgba(255,255,255,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.mobile-icon-btn img {
+  width: 28px;
+  height: 28px;
+  pointer-events: none;
+}
+
+.mobile-icon-btn:disabled {
+  opacity: 0.3;
+}
+
+.mobile-icon-btn.selected-happy {
+  background: var(--success);
+  border-color: var(--success);
+}
+
+.mobile-icon-btn.selected-sad {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.mobile-clear-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.1);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.mobile-kpi-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.mobile-kpi-label {
+  font-weight: bold;
+}
+
+.mobile-kpi-range {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.mobile-kpi-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.mobile-kpi-input {
+  width: 80px;
+  padding: 10px;
+  font-size: 1.1rem;
+  text-align: right;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  border-radius: 8px;
+}
+
+.mobile-kpi-row.kpi-success {
+  border-color: var(--success);
+}
+
+.mobile-kpi-row.kpi-fail {
+  border-color: var(--danger);
+}
+
+.mobile-fail-btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--danger);
+  background: transparent;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.mobile-fail-btn:disabled {
+  opacity: 0.3;
+}
+
+.mobile-lock-btn {
+  width: 100%;
+  margin-top: 20px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 12px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  font-size: 1.05rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.mobile-lock-btn.locked {
+  background: var(--border);
+  color: var(--text-muted);
+}
+
+.mobile-lock-btn img {
+  width: 22px;
+  height: 22px;
+}
+
+.mobile-alert-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.mobile-alert-box {
+  background: #222;
+  padding: 30px;
+  border-radius: 15px;
+  border: 2px solid var(--accent);
+  text-align: center;
+  max-width: 340px;
+}
+
+.mobile-alert-box p {
+  color: white;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+.mobile-alert-box button {
+  padding: 12px 30px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
