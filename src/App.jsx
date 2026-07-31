@@ -70,6 +70,13 @@ function UserPanel({ userId, username, onOpenSettings, unreadMessages, onOpenPos
     fetchData();
   }, [userId]);
 
+  // Poll for changes saved from other devices (e.g. the mobile entry UI) so
+  // this always-on kiosk screen doesn't go stale until a manual reload.
+  useEffect(() => {
+    const id = setInterval(fetchData, 5000);
+    return () => clearInterval(id);
+  }, [userId]);
+
   // Schedule a single re-render at exactly 6am if we haven't reached it yet
   useEffect(() => {
     const now = new Date();
