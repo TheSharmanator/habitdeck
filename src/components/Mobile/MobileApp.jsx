@@ -4,6 +4,7 @@ import MobileKPIs from './MobileKPIs';
 
 const emptyUser = { username: '', pin: '', habits: [], kpis: [] };
 const SESSION_KEY = 'habitdeck_mobile_session';
+const VIEW_KEY = 'habitdeck_mobile_view';
 
 export default function MobileApp() {
   const [screen, setScreen] = useState('loading'); // loading | pick-user | pin | main
@@ -26,6 +27,7 @@ export default function MobileApp() {
       if (restored) {
         setSelectedUser(savedUser);
         setData(restored[1]);
+        setView(localStorage.getItem(VIEW_KEY) || 'habits');
         setScreen('main');
       } else {
         localStorage.removeItem(SESSION_KEY);
@@ -40,6 +42,7 @@ export default function MobileApp() {
       if (pinInput === data.pin) {
         setPinError('');
         localStorage.setItem(SESSION_KEY, selectedUser);
+        localStorage.setItem(VIEW_KEY, 'habits');
         setScreen('main');
         setView('habits');
       } else {
@@ -67,8 +70,14 @@ export default function MobileApp() {
     });
   };
 
+  const switchView = (v) => {
+    localStorage.setItem(VIEW_KEY, v);
+    setView(v);
+  };
+
   const logOut = () => {
     localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(VIEW_KEY);
     setScreen('pick-user');
     setSelectedUser(null);
     setData(null);
@@ -170,11 +179,11 @@ export default function MobileApp() {
             : <MobileKPIs data={data} onSave={saveData} />}
         </main>
         <nav className="mobile-bottom-nav">
-          <button className={`mobile-nav-btn ${view === 'habits' ? 'active' : ''}`} onClick={() => setView('habits')}>
+          <button className={`mobile-nav-btn ${view === 'habits' ? 'active' : ''}`} onClick={() => switchView('habits')}>
             <span className="mobile-nav-icon">✅</span>
             <span>Habits</span>
           </button>
-          <button className={`mobile-nav-btn ${view === 'kpis' ? 'active' : ''}`} onClick={() => setView('kpis')}>
+          <button className={`mobile-nav-btn ${view === 'kpis' ? 'active' : ''}`} onClick={() => switchView('kpis')}>
             <span className="mobile-nav-icon">📊</span>
             <span>KPIs</span>
           </button>
