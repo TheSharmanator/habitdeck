@@ -3,9 +3,10 @@ import MobileHabits from './MobileHabits';
 import MobileKPIs from './MobileKPIs';
 
 const emptyUser = { username: '', pin: '', habits: [], kpis: [] };
+const SESSION_KEY = 'habitdeck_mobile_session';
 
 export default function MobileApp() {
-  const [screen, setScreen] = useState('pick-user'); // pick-user | pin | main
+  const [screen, setScreen] = useState('loading'); // loading | pick-user | pin | main
   const [users, setUsers] = useState({ u1: emptyUser, u2: emptyUser });
   const [selectedUser, setSelectedUser] = useState(null);
   const [data, setData] = useState(null);
@@ -14,11 +15,22 @@ export default function MobileApp() {
   const [view, setView] = useState('habits');
 
   useEffect(() => {
-    ['u1', 'u2'].forEach(id => {
+    Promise.all(['u1', 'u2'].map(id =>
       fetch(`/api/data/${id}?t=${Date.now()}`)
         .then(res => res.json())
-        .then(d => setUsers(prev => ({ ...prev, [id]: d })))
-        .catch(() => {});
+        .then(d => { setUsers(prev => ({ ...prev, [id]: d })); return [id, d]; })
+        .catch(() => [id, null])
+    )).then(results => {
+      const savedUser = localStorage.getItem(SESSION_KEY);
+      const restored = savedUser && results.find(([id, d]) => id === savedUser && d?.pin);
+      if (restored) {
+        setSelectedUser(savedUser);
+        setData(restored[1]);
+        setScreen('main');
+      } else {
+        localStorage.removeItem(SESSION_KEY);
+        setScreen('pick-user');
+      }
     });
   }, []);
 
@@ -27,6 +39,7 @@ export default function MobileApp() {
     if (pinInput.length === 4) {
       if (pinInput === data.pin) {
         setPinError('');
+        localStorage.setItem(SESSION_KEY, selectedUser);
         setScreen('main');
         setView('habits');
       } else {
@@ -55,11 +68,16 @@ export default function MobileApp() {
   };
 
   const logOut = () => {
+    localStorage.removeItem(SESSION_KEY);
     setScreen('pick-user');
     setSelectedUser(null);
     setData(null);
     setPinInput('');
   };
+
+  if (screen === 'loading') {
+    return <div className="mobile-app" />;
+  }
 
   if (screen === 'pick-user') {
     return (

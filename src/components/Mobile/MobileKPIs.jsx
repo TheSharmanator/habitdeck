@@ -130,14 +130,25 @@ export default function MobileKPIs({ data, onSave }) {
                   <input
                     type="number"
                     inputMode="decimal"
+                    enterKeyHint="done"
                     className="mobile-kpi-input"
                     placeholder={cell.value === '❌' ? '❌' : '—'}
                     value={inputVal}
                     disabled={locked}
                     onChange={e => setDrafts(d => ({ ...d, [k.id]: e.target.value }))}
                     onBlur={e => { if (e.target.value !== '') commitValue(k, e.target.value); }}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.target.blur();
+                        if (draft !== undefined && draft !== '') commitValue(k, draft);
+                      }
+                    }}
                   />
-                  {(cell.value !== '' && cell.value != null) && !locked && (
+                  {draft !== undefined && draft !== '' && !locked && (
+                    <button className="mobile-save-btn" onClick={() => commitValue(k, draft)}>✓</button>
+                  )}
+                  {draft === undefined && (cell.value !== '' && cell.value != null) && !locked && (
                     <button className="mobile-clear-btn" onClick={() => clearValue(k)}>✕</button>
                   )}
                   <button className="mobile-fail-btn" disabled={locked} onClick={() => markFail(k)}>Fail</button>
