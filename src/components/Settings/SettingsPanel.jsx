@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
-import { DAY_LABELS, DAY_NAMES, dayTarget, hasDayOverride, setDayTarget, clearDayTarget } from '../../lib/kpiTargets';
+import { DAY_SHORT, dayTarget, hasDayOverride, setDayTarget, clearDayTarget } from '../../lib/kpiTargets';
 import 'react-easy-crop/react-easy-crop.css';
 
 const createImage = (url) =>
@@ -242,6 +242,21 @@ function PhotoUpload({ onPhotoSaved }) {
   );
 }
 
+// Target rows: an overridden weekday reads as a normal field, an inherited one
+// stays dimmed so the exceptions are obvious at a glance.
+const targetFieldStyle = (overridden) => ({
+  flex: 1,
+  minWidth: 0,
+  padding: '8px',
+  fontSize: '1.1rem',
+  textAlign: 'center',
+  background: overridden ? 'rgba(234,179,8,0.12)' : 'rgba(0,0,0,0.3)',
+  border: overridden ? '1px solid var(--warning, #eab308)' : '1px solid var(--border)',
+  color: overridden ? 'var(--warning, #eab308)' : 'white',
+  borderRadius: '6px',
+  fontWeight: overridden ? 'bold' : 'normal'
+});
+
 export default function SettingsPanel({ userId, onClose }) {
   const [data, setData] = useState(null);
   const [unlocked, setUnlocked] = useState(false);
@@ -251,8 +266,6 @@ export default function SettingsPanel({ userId, onClose }) {
   const [nukeConfirmStep, setNukeConfirmStep] = useState(0); // 0=idle, 1=first confirm, 2=second confirm
   const [showPhotoEdit, setShowPhotoEdit] = useState(false);
   const [photoHover, setPhotoHover] = useState(false);
-  // Which weekday's target editor is open for each KPI (keyed by KPI index).
-  const [kpiDaySel, setKpiDaySel] = useState({});
 
   useEffect(() => {
     fetch(`/api/data/${userId}`)
@@ -448,56 +461,32 @@ export default function SettingsPanel({ userId, onClose }) {
                   />
                   <button onClick={() => removeKpi(i)} style={{ padding: '0 10px', background: 'var(--danger)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><img src="/icons/delete.png" alt="Delete" style={{ width: '24px', height: '24px' }} /></button>
                 </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}><label style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>Min</label><input type="text" readOnly onClick={() => setActiveInput({ type: 'kpi-num', field: 'min', idx: i, value: String(k.min) })} value={k.min} style={{ width: '100%', padding: '10px', fontSize: '1.2rem', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', color: 'white', borderRadius: '6px' }} /></div>
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}><label style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>Max</label><input type="text" readOnly onClick={() => setActiveInput({ type: 'kpi-num', field: 'max', idx: i, value: String(k.max) })} value={k.max} style={{ width: '100%', padding: '10px', fontSize: '1.2rem', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', color: 'white', borderRadius: '6px' }} /></div>
-                </div>
-
-                {/* Per-weekday targets — tap a day to give it its own range */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}>
-                  <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)', flexShrink: 0 }}>Day targets</label>
-                  <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
-                    {DAY_LABELS.map((day, dIdx) => {
-                      const overridden = hasDayOverride(k, dIdx);
-                      const selected = kpiDaySel[i] === dIdx;
-                      return (
+                {/* Targets: one range for every day, plus any weekday you want different */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ width: '72px', flexShrink: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>Every day</span>
+                    <input type="text" readOnly value={k.min} onClick={() => setActiveInput({ type: 'kpi-num', field: 'min', idx: i, value: String(k.min) })} style={targetFieldStyle(false)} />
+                    <input type="text" readOnly value={k.max} onClick={() => setActiveInput({ type: 'kpi-num', field: 'max', idx: i, value: String(k.max) })} style={targetFieldStyle(false)} />
+                    <span style={{ width: '40px', flexShrink: 0 }} />
+                  </div>
+                  {DAY_SHORT.map((dayName, dIdx) => {
+                    const overridden = hasDayOverride(k, dIdx);
+                    const t = dayTarget(k, dIdx);
+                    return (
+                      <div key={dIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ width: '72px', flexShrink: 0, fontSize: '0.9rem', fontWeight: overridden ? 'bold' : 'normal', color: overridden ? 'var(--warning, #eab308)' : 'var(--text-muted)' }}>{dayName}</span>
+                        <input type="text" readOnly value={t.min} onClick={() => setActiveInput({ type: 'kpi-day-num', field: 'min', idx: i, day: dIdx, value: String(t.min) })} style={targetFieldStyle(overridden)} />
+                        <input type="text" readOnly value={t.max} onClick={() => setActiveInput({ type: 'kpi-day-num', field: 'max', idx: i, day: dIdx, value: String(t.max) })} style={targetFieldStyle(overridden)} />
                         <button
-                          key={dIdx}
-                          onClick={() => setKpiDaySel(s => ({ ...s, [i]: selected ? null : dIdx }))}
-                          title={overridden ? `${DAY_NAMES[dIdx]}: ${dayTarget(k, dIdx).min}-${dayTarget(k, dIdx).max}` : `${DAY_NAMES[dIdx]} uses the daily range`}
-                          style={{
-                            flex: 1, height: '38px', borderRadius: '8px', cursor: 'pointer',
-                            fontSize: '1rem', fontWeight: 'bold', color: 'white',
-                            border: selected ? '2px solid var(--accent)' : overridden ? '2px solid var(--warning, #eab308)' : '1px solid var(--border)',
-                            background: selected ? 'rgba(59,130,246,0.28)' : overridden ? 'rgba(234,179,8,0.18)' : 'rgba(255,255,255,0.06)'
-                          }}
-                        >{day}</button>
-                      );
-                    })}
-                  </div>
+                          onClick={() => clearKpiDayTarget(i, dIdx)}
+                          disabled={!overridden}
+                          title={overridden ? 'Back to the every-day range' : 'Uses the every-day range'}
+                          style={{ width: '40px', height: '40px', flexShrink: 0, borderRadius: '6px', cursor: overridden ? 'pointer' : 'default', fontSize: '1.1rem', border: '1px solid var(--border)', background: overridden ? 'rgba(255,255,255,0.12)' : 'transparent', color: overridden ? 'white' : 'rgba(255,255,255,0.2)' }}
+                        >↺</button>
+                      </div>
+                    );
+                  })}
                 </div>
-
-                {kpiDaySel[i] != null && (
-                  <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(0,0,0,0.25)', border: '1px solid var(--border)', borderRadius: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>{DAY_NAMES[kpiDaySel[i]]} only</span>
-                      <button
-                        onClick={() => clearKpiDayTarget(i, kpiDaySel[i])}
-                        style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.1)', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '0.9rem', cursor: 'pointer' }}
-                      >Use daily range</button>
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <label style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>Min</label>
-                        <input type="text" readOnly onClick={() => setActiveInput({ type: 'kpi-day-num', field: 'min', idx: i, day: kpiDaySel[i], value: String(dayTarget(k, kpiDaySel[i]).min) })} value={dayTarget(k, kpiDaySel[i]).min} style={{ width: '100%', padding: '10px', fontSize: '1.2rem', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', color: 'white', borderRadius: '6px' }} />
-                      </div>
-                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <label style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>Max</label>
-                        <input type="text" readOnly onClick={() => setActiveInput({ type: 'kpi-day-num', field: 'max', idx: i, day: kpiDaySel[i], value: String(dayTarget(k, kpiDaySel[i]).max) })} value={dayTarget(k, kpiDaySel[i]).max} style={{ width: '100%', padding: '10px', fontSize: '1.2rem', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', color: 'white', borderRadius: '6px' }} />
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             ))}
             {formData.kpis.length < 8 && <button onClick={addKpi} style={{ padding: '10px', width: '100%', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px dashed var(--border)', borderRadius: '6px', fontSize: '1.2rem', cursor: 'pointer' }}>+ Add KPI</button>}

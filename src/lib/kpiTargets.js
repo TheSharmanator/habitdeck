@@ -11,6 +11,7 @@
 // all) keeps working untouched.
 
 export const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+export const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 // JS getDay() is Sunday-first; the app's day toggles are Monday-first.

@@ -808,50 +808,81 @@ body, html {
 }
 
 /* --- per-weekday KPI targets --- */
-.mob-kpi-day-block {
+.mob-day-targets {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-
-.mob-day-toggle.override {
-  border: 2px solid var(--warning, #eab308);
-  background: rgba(234, 179, 8, 0.18);
-}
-
-.mob-day-toggle.selected {
-  border: 2px solid var(--accent);
-  background: rgba(59, 130, 246, 0.28);
-  color: #fff;
-}
-
-.mob-kpi-day-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 10px;
-  background: rgba(0, 0, 0, 0.25);
+  gap: 6px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.22);
   border: 1px solid var(--border);
   border-radius: 10px;
 }
 
-.mob-kpi-day-editor-head {
+.mob-day-target-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 
-.mob-kpi-day-title {
-  font-size: 0.95rem;
-  font-weight: bold;
+.mob-day-target-row.head {
+  opacity: 0.6;
+}
+
+.mob-day-target-name {
+  width: 68px;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.mob-day-target-name.strong {
   color: var(--text-primary);
+  font-weight: bold;
 }
 
-.mob-btn.mob-btn-mini {
-  min-height: 36px;
-  padding: 8px 12px;
-  font-size: 0.85rem;
+.mob-day-target-label {
+  flex: 1;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.mob-day-target-input {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 16px; /* stops iOS zooming on focus */
+  padding: 10px 6px;
+}
+
+.mob-day-target-reset,
+.mob-day-target-reset-btn {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.mob-day-target-reset-btn {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.mob-day-target-reset-btn:disabled {
+  opacity: 0.25;
+  background: none;
+  cursor: default;
+}
+
+.mob-day-target-row.overridden .mob-day-target-input {
+  background: rgba(234, 179, 8, 0.12);
+  border-color: var(--warning, #eab308);
+  color: var(--warning, #eab308);
+  font-weight: bold;
 }
 
 .mob-kpi-range-row {
