@@ -1,8 +1,8 @@
 import React, { useRef, useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import 'react-easy-crop/react-easy-crop.css';
+import { DAY_LABELS, DAY_NAMES, dayTarget, hasDayOverride, setDayTarget, clearDayTarget } from '../../lib/kpiTargets';
 
-const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const DEFAULT_SCHEDULE = [true, true, true, true, true, true, true];
 
 const createImage = (url) =>
@@ -117,6 +117,8 @@ export default function MobileSettings({ data, onSave, onClose, onDeleteAccount 
   const [alert, setAlert] = useState(null);
   const [nukeStep, setNukeStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  // Which weekday's target editor is open for each KPI (keyed by KPI index).
+  const [kpiDaySel, setKpiDaySel] = useState({});
 
   const habits = form.habits || [];
   const kpis = form.kpis || [];
@@ -181,6 +183,18 @@ export default function MobileSettings({ data, onSave, onClose, onDeleteAccount 
   /* ---------------- kpis ---------------- */
   const updateKpi = (idx, field, value) => {
     const next = kpis.map((k, i) => (i === idx ? { ...k, [field]: value } : k));
+    setForm(f => ({ ...f, kpis: next }));
+  };
+
+  // Per-weekday targets: an override applies to that weekday only; setting the
+  // value back to the daily range removes it again.
+  const updateKpiDayTarget = (idx, day, field, value) => {
+    const next = kpis.map((k, i) => (i === idx ? setDayTarget(k, day, field, value) : k));
+    setForm(f => ({ ...f, kpis: next }));
+  };
+
+  const clearKpiDayTarget = (idx, day) => {
+    const next = kpis.map((k, i) => (i === idx ? clearDayTarget(k, day) : k));
     setForm(f => ({ ...f, kpis: next }));
   };
 
@@ -370,6 +384,60 @@ export default function MobileSettings({ data, onSave, onClose, onDeleteAccount 
                   onChange={(e) => updateKpi(i, 'max', e.target.value)}
                 />
               </div>
+            </div>
+
+            {/* Per-weekday targets — tap a day to give it its own range */}
+            <div className="mob-kpi-day-block">
+              <span className="mob-label">Day targets</span>
+              <div className="mob-day-toggles">
+                {DAY_LABELS.map((day, dIdx) => {
+                  const overridden = hasDayOverride(k, dIdx);
+                  const selected = kpiDaySel[i] === dIdx;
+                  return (
+                    <button
+                      key={dIdx}
+                      className={`mob-day-toggle ${overridden ? 'override' : ''} ${selected ? 'selected' : ''}`}
+                      onClick={() => setKpiDaySel(s => ({ ...s, [i]: selected ? null : dIdx }))}
+                      title={overridden
+                        ? `${DAY_NAMES[dIdx]}: ${dayTarget(k, dIdx).min}-${dayTarget(k, dIdx).max}`
+                        : `${DAY_NAMES[dIdx]} uses the daily range`}
+                    >{day}</button>
+                  );
+                })}
+              </div>
+
+              {kpiDaySel[i] != null && (
+                <div className="mob-kpi-day-editor">
+                  <div className="mob-kpi-day-editor-head">
+                    <span className="mob-kpi-day-title">{DAY_NAMES[kpiDaySel[i]]} only</span>
+                    <button className="mob-btn ghost mob-btn-mini" onClick={() => clearKpiDayTarget(i, kpiDaySel[i])}>
+                      Use daily range
+                    </button>
+                  </div>
+                  <div className="mob-kpi-range-row">
+                    <div className="mob-kpi-num">
+                      <label className="mob-label">Min</label>
+                      <input
+                        className="mob-input"
+                        type="text"
+                        inputMode="decimal"
+                        value={dayTarget(k, kpiDaySel[i]).min ?? ''}
+                        onChange={(e) => updateKpiDayTarget(i, kpiDaySel[i], 'min', e.target.value)}
+                      />
+                    </div>
+                    <div className="mob-kpi-num">
+                      <label className="mob-label">Max</label>
+                      <input
+                        className="mob-input"
+                        type="text"
+                        inputMode="decimal"
+                        value={dayTarget(k, kpiDaySel[i]).max ?? ''}
+                        onChange={(e) => updateKpiDayTarget(i, kpiDaySel[i], 'max', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ))}

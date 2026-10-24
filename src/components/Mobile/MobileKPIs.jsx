@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { dayIndexForOffset, dayTarget, statusForValue } from '../../lib/kpiTargets';
 
 function getTargetDateStr(offset) {
   const d = new Date();
@@ -30,6 +31,8 @@ export default function MobileKPIs({ data, onSave }) {
   };
 
   const dateStr = getTargetDateStr(selectedDay);
+  // Targets can differ per weekday — score against the selected day's own.
+  const dayIndex = dayIndexForOffset(selectedDay);
   const log = data.kpiLogs?.[dateStr] || { locked: false, data: {} };
   const locked = !!log.locked;
   const blocked = isBeforeSignup(selectedDay);
@@ -39,7 +42,7 @@ export default function MobileKPIs({ data, onSave }) {
     const numVal = parseFloat(rawVal);
     let status = 'neutral';
     if (!isNaN(numVal)) {
-      status = (numVal >= kpi.min && numVal <= kpi.max) ? 'success' : 'fail';
+      status = statusForValue(kpi, dayIndex, rawVal);
       if (status === 'success') {
         const r = Math.floor(Math.random() * 20) + 1;
         new Audio(`/sounds/sound${r}.mp3`).play().catch(() => {});
@@ -124,7 +127,10 @@ export default function MobileKPIs({ data, onSave }) {
               <div key={k.id} className={`mobile-kpi-row ${statusClass}`}>
                 <div className="mobile-kpi-info">
                   <div className="mobile-kpi-label">{k.label}</div>
-                  <div className="mobile-kpi-range">target {k.min}-{k.max}</div>
+                  <div className="mobile-kpi-range">
+                    target {dayTarget(k, dayIndex).min}-{dayTarget(k, dayIndex).max}
+                    {dayTarget(k, dayIndex).overridden ? ' (this day)' : ''}
+                  </div>
                 </div>
                 <div className="mobile-kpi-actions">
                   <input

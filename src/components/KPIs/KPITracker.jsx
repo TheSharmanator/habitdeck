@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { dayIndexForOffset, dayTarget, statusForValue, hasAnyDayOverride } from '../../lib/kpiTargets';
 
 function VirtualNumpad({ onSave, onClose }) {
   const [value, setValue] = useState('');
@@ -144,7 +145,9 @@ export default function KPITracker({ data, userId, onSave, onExit }) {
     
     let status = 'neutral';
     if (!isNaN(numVal)) {
-      status = (numVal >= kpi.min && numVal <= kpi.max) ? 'success' : 'fail';
+      // Targets can differ per weekday — score against the target for the
+      // column's own day, not the KPI's base range.
+      status = statusForValue(kpi, dayIndexForOffset(dIdx), val);
       if (status === 'success') {
         const r = Math.floor(Math.random() * 20) + 1;
         const audio = new Audio(`/sounds/sound${r}.mp3`);
@@ -305,7 +308,7 @@ export default function KPITracker({ data, userId, onSave, onExit }) {
           <div className="cell header"></div>
           {kpis.map(k => (
             <div key={k.id} className="cell header" style={{ background: 'var(--border, #333)', color: 'var(--text-color, white)', padding: '15px', textAlign: 'center', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 'bold' }}>
-              {k.label} <br/><small>({k.min}-{k.max})</small>
+              {k.label} <br/><small>({hasAnyDayOverride(k) ? 'varies by day' : `${k.min}-${k.max}`})</small>
             </div>
           ))}
           {kpis.length === 0 && <div className="cell header"></div>}
@@ -351,7 +354,14 @@ export default function KPITracker({ data, userId, onSave, onExit }) {
                       cursor: isLocked ? 'default' : 'pointer'
                     }}
                   >
-                    {cellData.value}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: 1.1 }}>
+                      <span>{cellData.value}</span>
+                      {dayTarget(k, dayIndexForOffset(dIdx)).overridden && (
+                        <span style={{ fontSize: '0.65rem', opacity: 0.75, marginTop: '2px' }}>
+                          {(() => { const t = dayTarget(k, dayIndexForOffset(dIdx)); return `${t.min}-${t.max}`; })()}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 );
               }) : <div />}

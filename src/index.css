@@ -807,6 +807,53 @@ body, html {
   color: #fff;
 }
 
+/* --- per-weekday KPI targets --- */
+.mob-kpi-day-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mob-day-toggle.override {
+  border: 2px solid var(--warning, #eab308);
+  background: rgba(234, 179, 8, 0.18);
+}
+
+.mob-day-toggle.selected {
+  border: 2px solid var(--accent);
+  background: rgba(59, 130, 246, 0.28);
+  color: #fff;
+}
+
+.mob-kpi-day-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.mob-kpi-day-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mob-kpi-day-title {
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.mob-btn.mob-btn-mini {
+  min-height: 36px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+}
+
 .mob-kpi-range-row {
   display: flex;
   gap: 12px;
