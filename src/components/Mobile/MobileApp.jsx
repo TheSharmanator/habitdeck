@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import MobileHabits from './MobileHabits';
 import MobileKPIs from './MobileKPIs';
+import MobileSettings from './MobileSettings';
 
 const emptyUser = { username: '', pin: '', habits: [], kpis: [] };
 const SESSION_KEY = 'habitdeck_mobile_session';
@@ -73,6 +74,15 @@ export default function MobileApp() {
   const switchView = (v) => {
     localStorage.setItem(VIEW_KEY, v);
     setView(v);
+  };
+
+  const deleteAccount = async () => {
+    try {
+      await fetch(`/api/data/${selectedUser}`, { method: 'DELETE' });
+    } finally {
+      logOut();
+      window.location.reload();
+    }
   };
 
   const logOut = () => {
@@ -174,9 +184,16 @@ export default function MobileApp() {
           <button className="mobile-link-btn" onClick={logOut}>Switch User</button>
         </header>
         <main className="mobile-main">
-          {view === 'habits'
-            ? <MobileHabits data={data} onSave={saveData} />
-            : <MobileKPIs data={data} onSave={saveData} />}
+          {view === 'settings'
+            ? <MobileSettings
+                data={data}
+                onSave={saveData}
+                onClose={() => switchView('habits')}
+                onDeleteAccount={deleteAccount}
+              />
+            : view === 'kpis'
+              ? <MobileKPIs data={data} onSave={saveData} />
+              : <MobileHabits data={data} onSave={saveData} />}
         </main>
         <nav className="mobile-bottom-nav">
           <button className={`mobile-nav-btn ${view === 'habits' ? 'active' : ''}`} onClick={() => switchView('habits')}>
@@ -186,6 +203,10 @@ export default function MobileApp() {
           <button className={`mobile-nav-btn ${view === 'kpis' ? 'active' : ''}`} onClick={() => switchView('kpis')}>
             <span className="mobile-nav-icon">📊</span>
             <span>KPIs</span>
+          </button>
+          <button className={`mobile-nav-btn ${view === 'settings' ? 'active' : ''}`} onClick={() => switchView('settings')}>
+            <span className="mobile-nav-icon">⚙️</span>
+            <span>Settings</span>
           </button>
         </nav>
       </div>
